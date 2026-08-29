@@ -1,102 +1,90 @@
 // ============================================================
-// SENTENCE BANKS — Real English sentences with Keyboard Reach Scoring
-// Depends on: keyboard.js (KeyboardEngine)
+// SENTENCE BANKS — Curated Natural English Sentences
+// Depends on: keyboard.js (KeyboardEngine.analyzeSentenceMetrics)
 // ============================================================
 
-const RAW_SENTENCES = {
-  easy: [
-    "quality work requires careful coordination between your fingers",
-    "quick work helps your typing speed improve over time",
-    "power through every problem you face when typing quickly",
-    "write back when you know which version works right",
-    "people who practice typing often improve quite quickly",
-    "practice typing every day and your overall speed will grow",
-    "try your best to be quick and quite accurate",
-    "your fingers improve quickly when you push to reach",
-    "write exactly what you see without worrying about speed",
-    "working through problems quickly builds your overall keyboard skill",
-    "every keyboard exercise should push your fingers quite a bit further",
-    "quite a few words require your fingers to move very far",
-    "move your fingers quickly across every row of the keyboard",
-    "require yourself to type without looking down at your keyboard",
-    "improve your typing by working through quite difficult word patterns",
-    "you will type quite well after practicing with focus every week",
-    "write down your progress and quite often review your results",
-    "fix every mistake before you move forward to the next word",
-    "people often improve their typing through quite simple focused practice",
-    "good work requires focus and quite a bit of daily practice",
-    "know where your fingers should travel for every letter you type",
-    "power users improve their keyboard reach through quite regular practice"
-  ],
-  medium: [
-    "quick review of your previous project requires quite careful work before moving forward",
-    "write back whenever you figure out exactly which version works properly across browsers",
-    "your keyboard requires wider finger movement when typing complex words quite carefully",
-    "execute the previous workflow correctly and verify every output value you encounter",
-    "power users always optimize their keyboard performance by recognizing which movements require practice",
-    "type quickly without worrying too much about every mistake because accuracy improves naturally",
-    "maximum performance often requires you to push beyond your previous limits while maintaining accuracy",
-    "complex projects require very precise coordination between multiple teams working toward a common objective",
-    "the browser correctly retrieved your request but the network connection timed out before completing",
-    "working through problems methodically requires patience persistence proper planning and quite a bit of practice",
-    "whether quality work requires more precise coordination between your fingers is quite often overlooked",
-    "require yourself to practice typing beyond your comfortable zone by working through trickier combinations",
-    "knowing where your fingers travel across the keyboard improves your overall typing speed quite noticeably",
-    "improve your current approach by reviewing every problem carefully before you execute any permanent changes",
-    "question every previous assumption before you execute permanent changes across your entire working system today",
-    "between every project update and quarterly review your workflow requires quite a bit of coordinated organization",
-    "quality software requires proper documentation version control and thorough review before every public release",
-    "people working remotely quite often overlook important security requirements between network updates and software patches",
-    "your previous keyboard workout covered quite a variety of combinations requiring wider and more difficult finger movement",
-    "expect quite rapid improvement in your typing accuracy once you practice reaching toward outer keyboard zones"
-  ],
-  hard: [
-    "quick review of your previous project requires quite careful work before moving forward with any major system or workflow changes",
-    "write back whenever you figure out exactly which browser version works properly across every environment without compromising your security requirements",
-    "your keyboard requires quite wider finger movement when typing complex words that combine top row bottom row and outer keys frequently",
-    "execute the previous workflow correctly verify every output value then report whatever problems you encounter before requesting final approval from your manager",
-    "power users always optimize their keyboard performance by quickly recognizing which finger movements require extra practice and then repeating those movements",
-    "type quickly without worrying too much about every mistake because your accuracy quite naturally improves over time with focused deliberate practice",
-    "maximum performance often requires you to push beyond your previous typing limits while quite carefully maintaining accuracy throughout every single word you encounter",
-    "complex projects often require very precise coordination between multiple teams working toward a common quarterly objective with proper review at every checkpoint",
-    "question every previous assumption before you execute permanent changes across your entire working system because incorrect modifications quickly propagate through multiple dependencies",
-    "quality software development requires proper documentation version control clear communication and quite thorough review before every public release to minimize unexpected problems",
-    "people working remotely quite often overlook important security requirements between network updates and software patches which can quite quickly expose critical system vulnerabilities",
-    "whether you believe it or not quality work usually requires more precise coordination between your fingers your eyes and your entire working memory at all times",
-    "require yourself to practice typing beyond your comfortable zone by working through trickier combinations of letters that span across every single row of your keyboard",
-    "knowing where your fingers travel quite noticeably improves your overall typing speed and accuracy within just a few weeks of focused and deliberate daily practice",
-    "improve your current approach by carefully reviewing every problem before you execute any permanent overwrites or modifications to your existing workflow and project structure",
-    "between every project update and quarterly review your workflow requires quite a bit of coordinated organization careful documentation and thorough verification of every expected output",
-    "the browser correctly retrieved your previous request but the network connection timed out before completing the transfer because your maximum retry configuration limit was exceeded",
-    "your previous keyboard workout covered quite a variety of letter combinations that required wider and more uncomfortable finger movement well beyond the standard home row position",
-    "working through problems methodically requires patience persistence proper planning quite a bit of focused practice and excellent coordination between your fingers and your entire working memory",
-    "expect quite rapid improvement in your typing accuracy and overall keyboard speed once you become quite comfortable reaching toward outer zones and corner keys on every single row"
-  ]
-};
+const RAW_SENTENCES = [
+  // Everyday
+  "Please remember to save your work before closing the application.",
+  "The weather changed suddenly, so everyone decided to leave earlier than expected.",
+  "Can you send me the latest document when you have a moment?",
+  "I am looking forward to our meeting next week.",
+  "Don't forget to check your email for the new guidelines.",
+  "It is always a good idea to double check your numbers.",
+  "She asked if there was any extra coffee left in the break room.",
+  "He walked to the store because his car was in the shop.",
+  "Make sure to turn off the lights when you leave the office.",
+  "They decided to order pizza for lunch instead of making sandwiches.",
+  "The dog chased the squirrel all the way across the park.",
+  "I think we have enough time to finish this before dinner.",
 
-// Process sentence reach scores and construct SENTENCE_BANKS
-var SENTENCE_BANKS = {
-  easy: RAW_SENTENCES.easy.slice().sort((a, b) => {
-    const sA = typeof KeyboardEngine !== "undefined" ? KeyboardEngine.calculateReachScore(a) : 1;
-    const sB = typeof KeyboardEngine !== "undefined" ? KeyboardEngine.calculateReachScore(b) : 1;
-    return sA - sB;
-  }),
+  // Technology
+  "The browser stopped responding after the network connection was interrupted.",
+  "Previous software updates exposed several complex problems in the network configuration.",
+  "Quality software requires careful planning, clear communication, and thorough testing.",
+  "The database server needs to be restarted after the configuration changes are applied.",
+  "Please verify that the encryption key is correctly formatted.",
+  "We must optimize the frontend code to reduce the overall page load time.",
+  "The new API endpoint will return user data in standard JSON format.",
+  "Deploying the latest build to production takes about five minutes.",
+  "Always keep backups of your most important files on an external drive.",
+  "The system administrator is currently updating the firewalls.",
+  "You should clear your browser cache if the website is not loading properly.",
+  "Machine learning models require a massive amount of training data.",
+  
+  // Work
+  "The team reviewed the project requirements before beginning the next phase.",
+  "When you start a new project, take a moment to review the details carefully.",
+  "Quick project reviews require precise coordination between different teams.",
+  "The quarterly financial report is due by the end of the day.",
+  "Please schedule a meeting with the client to discuss the contract terms.",
+  "We need to hire three new developers to meet our project deadlines.",
+  "The marketing campaign was a huge success and brought in many new customers.",
+  "Let's focus on completing the most urgent tasks first.",
+  "Her presentation was very clear and answered all of our questions.",
+  "I have attached the updated spreadsheet for your review.",
+  "The manager praised the team for their hard work and dedication.",
+  "We are currently evaluating several different vendors for the new software.",
 
-  medium: RAW_SENTENCES.medium.slice().sort((a, b) => {
-    const sA = typeof KeyboardEngine !== "undefined" ? KeyboardEngine.calculateReachScore(a) : 1;
-    const sB = typeof KeyboardEngine !== "undefined" ? KeyboardEngine.calculateReachScore(b) : 1;
-    return sA - sB;
-  }),
+  // Learning / Typing
+  "Regular practice helps you become more comfortable with difficult keyboard movements.",
+  "The quick brown fox jumps over the lazy dog.",
+  "Typing speed increases naturally when you focus on accuracy first.",
+  "Keep your hands in the correct home row position for the best results.",
+  "Don't look down at your fingers while you are typing.",
+  "It takes time to build muscle memory for the outer keys.",
+  "A good typist rarely needs to correct mistakes.",
+  "Take short breaks to rest your hands and prevent fatigue.",
+  "Try to maintain a steady rhythm rather than rushing through the words.",
+  "Every mistake is an opportunity to learn and improve your skills.",
+  "Focus on hitting the correct keys rather than typing as fast as possible.",
+  "With enough practice, your fingers will instinctively know where to go."
+];
 
-  hard: RAW_SENTENCES.hard.slice().sort((a, b) => {
-    const sA = typeof KeyboardEngine !== "undefined" ? KeyboardEngine.calculateReachScore(a) : 1;
-    const sB = typeof KeyboardEngine !== "undefined" ? KeyboardEngine.calculateReachScore(b) : 1;
-    return sB - sA; // Hard sentences sort heaviest reach first
-  })
-};
+// Process sentence metrics and construct SENTENCE_BANKS
+var SENTENCE_BANKS = { easy: [], medium: [], hard: [] };
+
+if (typeof KeyboardEngine !== "undefined" && typeof KeyboardEngine.analyzeSentenceMetrics === "function") {
+  RAW_SENTENCES.forEach(text => {
+    const metrics = KeyboardEngine.analyzeSentenceMetrics(text);
+    if (metrics.bucket === "easy") SENTENCE_BANKS.easy.push(text);
+    else if (metrics.bucket === "medium") SENTENCE_BANKS.medium.push(text);
+    else SENTENCE_BANKS.hard.push(text);
+  });
+
+  // Sort within buckets by averageReach (easier to harder)
+  SENTENCE_BANKS.easy.sort((a, b) => KeyboardEngine.analyzeSentenceMetrics(a).averageReach - KeyboardEngine.analyzeSentenceMetrics(b).averageReach);
+  SENTENCE_BANKS.medium.sort((a, b) => KeyboardEngine.analyzeSentenceMetrics(a).averageReach - KeyboardEngine.analyzeSentenceMetrics(b).averageReach);
+  SENTENCE_BANKS.hard.sort((a, b) => KeyboardEngine.analyzeSentenceMetrics(a).averageReach - KeyboardEngine.analyzeSentenceMetrics(b).averageReach);
+} else {
+  // Fallback if KeyboardEngine is missing
+  SENTENCE_BANKS.easy = RAW_SENTENCES.slice(0, 10);
+  SENTENCE_BANKS.medium = RAW_SENTENCES.slice(10, 20);
+  SENTENCE_BANKS.hard = RAW_SENTENCES.slice(20);
+}
 
 var SENTENCE_BANK_SPLIT = {
-  easy: 12,
-  medium: 10,
-  hard: 10,
+  easy: SENTENCE_BANKS.easy.length,
+  medium: SENTENCE_BANKS.medium.length,
+  hard: SENTENCE_BANKS.hard.length,
 };

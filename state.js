@@ -97,26 +97,25 @@ function createWord(id, text, x, y, fallSpeed, w, h) {
 
 /**
  * @param {number}   id
- * @param {string[]} words       array of plain-text words (no punctuation)
- * @param {{x,y,w}[]} wordLayouts  positions relative to strip top-left
- * @param {number}   x    left edge of strip in logical px
- * @param {number}   y    top edge of strip in logical px
- * @param {number}   fallSpeed  px/s
- * @param {number}   w    strip width
- * @param {number}   h    strip height
+ * @param {string}   text        the complete natural sentence
+ * @param {string[]} words       array of plain-text words (for layout/rendering)
+ * @param {object[]} wordLayouts {x, y, w} per word
+ * @param {number}   x           left edge in logical px
+ * @param {number}   y           top edge in logical px
+ * @param {number}   fallSpeed   px/s
+ * @param {number}   w           total block width
+ * @param {number}   h           total block height
  */
-function createLine(id, words, wordLayouts, x, y, fallSpeed, w, h) {
+function createLine(id, text, words, wordLayouts, x, y, fallSpeed, w, h) {
   return {
-    id,
-    words,                // string[] — each word individually
-    wordLayouts,          // {x, y, w}[] — one entry per word
-    wordIdx:      0,      // index of word currently being typed
-    charProgress: 0,      // chars correctly typed of current word
+    id, text, words, wordLayouts,
+    wordIdx:         0,     // which word is currently active
+    charProgress:    0,     // number of characters correctly typed so far (global within the full sentence string)
     x, y, fallSpeed, w, h,
     alive:           true,
     fizzle:          false,
     fizzleAlpha:     1,
-    errorFlashTimer: 0,   // wrong key visual feedback timer (seconds)
+    errorFlashTimer: 0,     // wrong key visual feedback timer (seconds)
   };
 }
 

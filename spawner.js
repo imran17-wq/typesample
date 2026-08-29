@@ -232,6 +232,7 @@ function trySpawnLine(state, canvasW, canvasH) {
 
   state.activeLine = createLine(
     state.nextLineId++,
+    text,
     words,
     layout.wordLayouts,
     x, y,

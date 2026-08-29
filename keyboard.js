@@ -170,6 +170,92 @@
     });
   }
 
+  /**
+   * Analyze normalized reach metrics for a complete sentence.
+   * @param {string} text 
+   * @returns {object}
+   */
+  function analyzeSentenceMetrics(text) {
+    const chars = text.toLowerCase().replace(/[^a-z]/g, "");
+    const wordsCount = text.split(" ").filter(w => w.length > 0).length;
+    if (chars.length <= 1) {
+      return { words: wordsCount, characters: text.length, averageReach: 1.0, reachDensity: 1.0, sameFingerDensity: 0, rowJumpDensity: 0, outerKeyDensity: 0, bucket: "easy" };
+    }
+
+    let totalReach = 0;
+    let outerCount = 0;
+    let sameFingerCount = 0;
+    let rowJumpCount = 0;
+
+    for (let i = 0; i < chars.length; i++) {
+      const ch1 = chars[i];
+      if (OUTER_KEYS.has(ch1)) outerCount++;
+
+      if (i > 0) {
+        const ch0 = chars[i - 1];
+        const pos0 = KEY_COORDS[ch0];
+        const pos1 = KEY_COORDS[ch1];
+
+        if (pos0 && pos1) {
+          const f0 = FINGER_MAP[ch0];
+          const f1 = FINGER_MAP[ch1];
+          const hand0 = f0 <= 3 ? "L" : "R";
+          const hand1 = f1 <= 3 ? "L" : "R";
+
+          if (hand0 !== hand1) {
+            totalReach += 0.3;
+          } else {
+            const dx = pos1.x - pos0.x;
+            const dy = pos1.y - pos0.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            let transitionScore = dist * 1.2;
+
+            if (f0 !== undefined && f0 === f1 && ch0 !== ch1) {
+              transitionScore += 2.0;
+              sameFingerCount++;
+            }
+
+            const rowDiff = Math.abs(dy);
+            if (rowDiff === 2) {
+              transitionScore += 1.5;
+              rowJumpCount++;
+            }
+            totalReach += transitionScore;
+          }
+        }
+      }
+    }
+
+    const len = chars.length;
+    const transitions = len - 1;
+    const averageReach = totalReach / transitions;
+    const reachDensity = totalReach / text.length; // per actual string char
+    const sameFingerDensity = sameFingerCount / transitions;
+    const rowJumpDensity = rowJumpCount / transitions;
+    const outerKeyDensity = outerCount / len;
+
+    // Sentence-level bucket classification based on normalized density and reach
+    // (Sentence difficulty must not use the same raw score thresholds as individual words)
+    let bucket = "easy";
+    if (averageReach > 1.35 || sameFingerDensity > 0.08 || rowJumpDensity > 0.05) {
+      bucket = "medium";
+    }
+    if (averageReach > 1.6 || sameFingerDensity > 0.13 || rowJumpDensity > 0.08 || outerKeyDensity > 0.25) {
+      bucket = "hard";
+    }
+
+    return {
+      words: wordsCount,
+      characters: text.length,
+      averageReach: Math.round(averageReach * 100) / 100,
+      reachDensity: Math.round(reachDensity * 100) / 100,
+      sameFingerDensity: Math.round(sameFingerDensity * 100) / 100,
+      rowJumpDensity: Math.round(rowJumpDensity * 100) / 100,
+      outerKeyDensity: Math.round(outerKeyDensity * 100) / 100,
+      bucket
+    };
+  }
+
   return {
     KEY_COORDS,
     FINGER_MAP,
@@ -177,6 +263,7 @@
     calculateReachScore,
     getDifficultyBucket,
     getSelectionWeight,
-    diagnose
+    diagnose,
+    analyzeSentenceMetrics
   };
 });

@@ -176,7 +176,23 @@ test("F2 toggles pause, P-key and Space do not toggle pause", () => {
   assert.strictEqual(srState.isPaused, false, "Manual UI togglePauseState should resume game");
 });
 
-// 6. History & LocalStorage Security Tests
+// 6. Sentence Rush Difficulty Diagnostics
+test("Sentence Rush difficulty diagnostics produce normalized metrics", () => {
+  if (typeof KeyboardEngine === "undefined" || !KeyboardEngine.analyzeSentenceMetrics) return;
+  const sentences = [
+    "please remember to save your work.", // Short, mostly home row
+    "quick project reviews require precise coordination between different teams.", // Contains q, p, c, v
+    "previous software updates exposed several complex problems in the network configuration." // Long, hard reaches
+  ];
+  console.log("\n--- SENTENCE DIAGNOSTICS ---");
+  sentences.forEach(s => {
+    const metrics = KeyboardEngine.analyzeSentenceMetrics(s);
+    console.log(`Sentence: "${s}"\nWords: ${metrics.words}, Chars: ${metrics.characters}\nAvg Reach: ${metrics.averageReach}, Reach Density: ${metrics.reachDensity}\nSame-Finger Density: ${metrics.sameFingerDensity}, Row-Jump Density: ${metrics.rowJumpDensity}\nOuter-Key Density: ${metrics.outerKeyDensity}\nBucket: ${metrics.bucket}\n`);
+  });
+  console.log("----------------------------");
+});
+
+// 7. History & LocalStorage Security Tests
 test("Run history save, load, max 10 limit, mode/diff validation, and corruption recovery", () => {
   // Mock localStorage for Node test
   const store = {};

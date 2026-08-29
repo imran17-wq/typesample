@@ -400,41 +400,88 @@ function _drawLineBlock(ctx, line) {
   }
   _roundRect(ctx, x, y, w, h, BLOCK_R); ctx.stroke();
 
-  // Per-word colouring
+  // Per-word rendering based on global charProgress
   ctx.font = FONT_SENT; ctx.textBaseline = "middle";
+  const spaceW = ctx.measureText(" ").width;
+  let currentGlobalIdx = 0;
 
   line.words.forEach((word, i) => {
     const lyt = line.wordLayouts[i];
     const wx  = x + lyt.x;
     const wy  = y + lyt.y + SENT_LINE_H / 2;
 
-    if (i < line.wordIdx) {
-      // Fully typed — done colour
-      ctx.fillStyle = C.tDone;
-      ctx.fillText(word, wx, wy);
+    // Draw the word character by character (or split by typed status)
+    const wordStartIdx = currentGlobalIdx;
+    const wordEndIdx = wordStartIdx + word.length;
+    
+    // Is the expected character in this word?
+    const isActiveWord = (line.charProgress >= wordStartIdx && line.charProgress <= wordEndIdx); // includes the trailing space
 
-    } else if (i === line.wordIdx) {
-      // Currently active word — add subtle highlight box behind current target word
-      if (line.alive && !fizzle) {
-        const wordW = ctx.measureText(word).width;
-        ctx.fillStyle = errorFlashTimer > 0 ? "rgba(255, 68, 68, 0.28)" : "rgba(74, 142, 255, 0.18)";
-        _roundRect(ctx, wx - 3, wy - SENT_LINE_H / 2 + 2, wordW + 6, SENT_LINE_H - 4, 4);
-        ctx.fill();
-      }
+    if (isActiveWord && line.alive && !fizzle) {
+      // Subtle highlight box behind active word
+      const wordW = ctx.measureText(word).width;
+      ctx.fillStyle = errorFlashTimer > 0 ? "rgba(255, 68, 68, 0.28)" : "rgba(74, 142, 255, 0.18)";
+      _roundRect(ctx, wx - 3, wy - SENT_LINE_H / 2 + 2, wordW + 6, SENT_LINE_H - 4, 4);
+      ctx.fill();
+    }
 
-      const typed    = word.slice(0, line.charProgress);
-      const untyped  = word.slice(line.charProgress);
-      if (typed) {
-        ctx.fillStyle = C.tTyped;
-        ctx.fillText(typed, wx, wy);
-      }
-      ctx.fillStyle = C.tActive;
-      ctx.fillText(untyped, wx + ctx.measureText(typed).width, wy);
+    // Determine what part is typed vs untyped for this word
+    let typedPart = "";
+    let expectedChar = "";
+    let untypedPart = "";
 
+    if (line.charProgress >= wordEndIdx) {
+      typedPart = word;
+    } else if (line.charProgress < wordStartIdx) {
+      untypedPart = word;
     } else {
-      // Future words
-      ctx.fillStyle = C.tUntyped;
-      ctx.fillText(word, wx, wy);
+      const localIdx = line.charProgress - wordStartIdx;
+      typedPart = word.slice(0, localIdx);
+      if (localIdx < word.length) {
+        expectedChar = word[localIdx];
+        untypedPart = word.slice(localIdx + 1);
+      }
+    }
+
+    const typedW = ctx.measureText(typedPart).width;
+    const expectedW = expectedChar ? ctx.measureText(expectedChar).width : spaceW;
+    
+    let cx = wx;
+    if (typedPart) {
+      ctx.fillStyle = C.tTyped; // bright
+      ctx.fillText(typedPart, cx, wy);
+      cx += typedW;
+    }
+
+    if (expectedChar && isActiveWord) {
+      // Draw expected character (subtle highlight or normal)
+      ctx.fillStyle = C.tActive;
+      ctx.fillText(expectedChar, cx, wy);
+      
+      // Draw caret
+      if (line.alive && !fizzle) {
+        ctx.fillStyle = "#ffcc00"; // Primary indicator
+        ctx.fillRect(cx, wy + 12, expectedW, 3);
+      }
+      cx += expectedW;
+    }
+
+    if (untypedPart) {
+      ctx.fillStyle = C.tUntyped; // dim
+      ctx.fillText(untypedPart, cx, wy);
+    }
+
+    currentGlobalIdx += word.length;
+
+    // Handle space character after word (if not last word)
+    if (i < line.words.length - 1) {
+      const isSpaceExpected = (line.charProgress === currentGlobalIdx);
+      if (isSpaceExpected && line.alive && !fizzle) {
+         const spaceX = wx + ctx.measureText(word).width;
+         ctx.fillStyle = "#ffcc00";
+         ctx.fillRect(spaceX, wy + 12, spaceW, 3);
+      }
+      currentGlobalIdx++; // for the space
     }
   });
 

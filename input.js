@@ -194,30 +194,36 @@ function _handleSentenceRushKey(state, ch) {
   const line = state.activeLine;
   if (!line || !line.alive) return;
 
-  const word     = line.words[line.wordIdx];
-  const expected = word[line.charProgress];
+  const expected = line.text[line.charProgress];
 
   if (ch === expected) {
     _trackKeystroke(state, expected, true);
     state.correctKeys++;
     line.charProgress++;
 
-    if (line.charProgress === word.length) {
-      // Current word finished — advance to next
+    // If we just typed a space (or reached the end), we finished a word
+    if (expected === " ") {
       line.wordIdx++;
-      line.charProgress = 0;
+    }
 
-      if (line.wordIdx >= line.words.length) {
-        // All words done — complete the line
-        completeLine(state, line);
-      }
+    if (line.charProgress === line.text.length) {
+      // All characters done — complete the line
+      completeLine(state, line);
     }
   } else {
-    // Wrong key — count mistake, flash error feedback, reset only current word's progress
+    // Wrong key — count mistake, flash error feedback, DO NOT reset full progress
+    // Wait, the rule is "reset only current word's progress" for mistakes.
+    // If we are at charProgress, how do we find the start of the current word?
+    // We can search backwards for the last space, or just use the lengths of words up to wordIdx.
     _trackKeystroke(state, expected, false);
     state.mistakes++;
     line.errorFlashTimer = 0.25;
-    line.charProgress = 0;
+
+    let wordStart = 0;
+    for (let i = 0; i < line.wordIdx; i++) {
+      wordStart += line.words[i].length + 1; // +1 for the space
+    }
+    line.charProgress = wordStart;
   }
 }
 
