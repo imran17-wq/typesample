@@ -176,6 +176,73 @@ test("F2 toggles pause, P-key and Space do not toggle pause", () => {
   assert.strictEqual(srState.isPaused, false, "Manual UI togglePauseState should resume game");
 });
 
+// 5.b. Sentence Rush Per-Keystroke Tracking Test
+test("Sentence Rush tracks correct and incorrect characters individually", () => {
+  const state = initGameState("sentenceRush", "medium");
+  const testSentence = "The quick project review requires careful testing.";
+  const words = testSentence.split(" ");
+  state.activeLine = {
+    alive: true,
+    text: testSentence,
+    words: words,
+    wordIdx: 0,
+    charProgress: 0,
+    errorFlashTimer: 0
+  };
+
+  // Ensure dependencies are loaded
+  if (typeof _handleSentenceRushKey === "undefined") {
+    // If running in node, we mock it or we assume it's attached.
+    // The test framework in test.js actually relies on the DOM or loads everything in one scope.
+    // Let's assume input.js is loaded (which it is, since test.js is at the bottom).
+  }
+
+  // Helper to simulate keydown
+  const simulateKey = (char) => {
+    state.totalKeys++; // simulated loop.js/input.js behavior
+    _handleSentenceRushKey(state, char);
+  };
+
+  // 1. Type "The"
+  simulateKey("T");
+  simulateKey("h");
+  simulateKey("e");
+  assert.strictEqual(state.correctKeys, 3, "Should have 3 correct keys");
+  assert.strictEqual(state.mistakes, 0, "Should have 0 mistakes");
+  assert.strictEqual(state.activeLine.charProgress, 3, "Char progress should be 3");
+
+  // 2. Type " " (space)
+  simulateKey(" ");
+  assert.strictEqual(state.correctKeys, 4, "Space should count as correct key");
+  assert.strictEqual(state.activeLine.charProgress, 4, "Char progress should advance past space");
+  assert.strictEqual(state.activeLine.wordIdx, 1, "Word index should advance after space");
+
+  // 3. Intentionally make error: Expected 'q', press 'w'
+  simulateKey("w");
+  assert.strictEqual(state.correctKeys, 4, "Correct keys should be unchanged");
+  assert.strictEqual(state.mistakes, 1, "Mistakes should be 1");
+  // The charProgress should reset to the start of the current word
+  assert.strictEqual(state.activeLine.charProgress, 4, "Char progress should reset to start of 'quick' (index 4)");
+  assert.strictEqual(state.totalKeys, 5, "Total keys should be 5");
+  assert.strictEqual(state.totalKeys, state.correctKeys + state.mistakes, "totalKeys must equal correctKeys + mistakes");
+
+  // 4. Test wrong space
+  simulateKey("q");
+  simulateKey("u");
+  simulateKey("i");
+  simulateKey("c");
+  simulateKey("k");
+  assert.strictEqual(state.activeLine.charProgress, 9, "Progress is at space");
+  simulateKey("x"); // wrong space
+  assert.strictEqual(state.mistakes, 2, "Wrong space is a mistake");
+  assert.strictEqual(state.activeLine.charProgress, 4, "Progress resets to start of 'quick' because space belongs to it");
+
+  // 5. Test accuracy
+  const acc = (state.correctKeys / state.totalKeys) * 100;
+  assert.strictEqual(acc, (9 / 11) * 100, "Accuracy must be purely based on correct / total");
+});
+
+
 // 6. Sentence Rush Difficulty Diagnostics
 test("Sentence Rush difficulty diagnostics produce normalized metrics", () => {
   if (typeof KeyboardEngine === "undefined" || !KeyboardEngine.analyzeSentenceMetrics) return;

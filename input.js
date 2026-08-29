@@ -192,12 +192,16 @@ function missWord(state, word) {
 // ==============================================================
 function _handleSentenceRushKey(state, ch) {
   const line = state.activeLine;
-  if (!line || !line.alive) return;
+  if (!line || !line.alive) {
+    _trackKeystroke(state, null, ch, false);
+    state.mistakes++;
+    return;
+  }
 
   const expected = line.text[line.charProgress];
 
   if (ch === expected) {
-    _trackKeystroke(state, expected, true);
+    _trackKeystroke(state, expected, ch, true);
     state.correctKeys++;
     line.charProgress++;
 
@@ -211,11 +215,8 @@ function _handleSentenceRushKey(state, ch) {
       completeLine(state, line);
     }
   } else {
-    // Wrong key — count mistake, flash error feedback, DO NOT reset full progress
-    // Wait, the rule is "reset only current word's progress" for mistakes.
-    // If we are at charProgress, how do we find the start of the current word?
-    // We can search backwards for the last space, or just use the lengths of words up to wordIdx.
-    _trackKeystroke(state, expected, false);
+    // Wrong key — count mistake, flash error feedback, reset only current word's progress
+    _trackKeystroke(state, expected, ch, false);
     state.mistakes++;
     line.errorFlashTimer = 0.25;
 
