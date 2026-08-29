@@ -126,20 +126,47 @@
   }
 
   /**
-   * Diagnostic helper to inspect word scores and buckets
-   * @param {string[]} [words]
+   * Calculate selection weight combining reach score and naturalness.
+   * High naturalness (common words) yields significantly higher selection probability.
+   * @param {string} word
+   * @param {number} naturalness
+   * @returns {number}
+   */
+  function getSelectionWeight(word, naturalness) {
+    const reachScore = calculateReachScore(word);
+    const nat = typeof naturalness === "number" ? naturalness : 0.9;
+    const weight = Math.pow(nat, 3.0) * (0.5 + reachScore / 2.0);
+    return Math.round(weight * 10000) / 10000;
+  }
+
+  /**
+   * Diagnostic helper to inspect word scores, naturalness, weights, and buckets
+   * @param {(string|{word:string, naturalness:number})[]} [words]
    */
   function diagnose(words) {
-    const list = words || [
-      "the", "and", "for", "are", "but", "cat", "dog", "sun", "run", "sit", "bed",
-      "water", "plant", "window", "light", "market", "forest", "system", "requires",
-      "quick", "project", "previous", "review", "verification", "maximum", "performance",
-      "workflow", "complex", "quixotic", "zephyr", "zoological"
+    const defaultList = [
+      { word: "the", naturalness: 1.0 },
+      { word: "quick", naturalness: 0.95 },
+      { word: "project", naturalness: 0.95 },
+      { word: "previous", naturalness: 0.95 },
+      { word: "keyboard", naturalness: 0.95 },
+      { word: "question", naturalness: 0.95 },
+      { word: "maximum", naturalness: 0.90 },
+      { word: "zephyr", naturalness: 0.20 },
+      { word: "quixotic", naturalness: 0.15 },
+      { word: "zoological", naturalness: 0.15 }
     ];
-    return list.map(w => {
+    const list = words || defaultList;
+
+    return list.map(item => {
+      const w = typeof item === "string" ? item : item.word;
+      const nat = typeof item === "object" && typeof item.naturalness === "number"
+        ? item.naturalness
+        : 0.9;
       const reachScore = calculateReachScore(w);
       const bucket = getDifficultyBucket(reachScore);
-      return { word: w, reachScore, bucket };
+      const selectionWeight = getSelectionWeight(w, nat);
+      return { word: w, reachScore, naturalness: nat, selectionWeight, bucket };
     });
   }
 
@@ -149,6 +176,7 @@
     OUTER_KEYS,
     calculateReachScore,
     getDifficultyBucket,
+    getSelectionWeight,
     diagnose
   };
 });

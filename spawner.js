@@ -1,5 +1,5 @@
 // ============================================================
-// SPAWNER — word / sentence spawning for both modes
+// SPAWNER — word / sentence spawning with Weighted Reach Engine & Anti-Repetition
 // Depends on:  renderer.js (measureWord, computeSentenceLayout)
 //              state.js    (createWord, createLine)
 //              words.js / sentences.js / config.js
@@ -13,17 +13,56 @@ const _recentWords = [];
 const _recentSentences = [];
 
 /**
- * Select an item from candidate pool excluding recently spawned items.
+ * Perform weighted random selection from candidate pool based on selectionWeight,
+ * while respecting anti-repetition history.
  */
-function _selectNonRepeating(pool, history, limit) {
+function _selectWeightedNonRepeating(pool, history, limit) {
   if (!pool || pool.length === 0) return "";
-  if (pool.length === 1) return pool[0];
+  if (pool.length === 1) return typeof pool[0] === "string" ? pool[0] : pool[0].word;
 
-  const available = pool.filter(item => !history.includes(item));
-  // If filtering leaves too few candidates, fall back to full pool
+  // Filter candidates to exclude recent history
+  const available = pool.filter(item => {
+    const w = typeof item === "string" ? item : item.word;
+    return !history.includes(w);
+  });
+
+  // Fallback if anti-repetition leaves fewer than 2 candidates
   const candidatePool = available.length >= 2 ? available : pool;
 
-  const picked = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+  // Calculate weights for candidates
+  let totalWeight = 0;
+  const weights = candidatePool.map(item => {
+    const wStr = typeof item === "string" ? item : item.word;
+    let weight = 1.0;
+    if (typeof getWordMetadata === "function") {
+      const meta = getWordMetadata(wStr);
+      if (meta && typeof meta.selectionWeight === "number") {
+        weight = meta.selectionWeight;
+      }
+    }
+    totalWeight += weight;
+    return weight;
+  });
+
+  let picked = "";
+  if (totalWeight <= 0) {
+    const item = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+    picked = typeof item === "string" ? item : item.word;
+  } else {
+    let r = Math.random() * totalWeight;
+    for (let i = 0; i < candidatePool.length; i++) {
+      r -= weights[i];
+      if (r <= 0) {
+        const item = candidatePool[i];
+        picked = typeof item === "string" ? item : item.word;
+        break;
+      }
+    }
+    if (!picked) {
+      const last = candidatePool[candidatePool.length - 1];
+      picked = typeof last === "string" ? last : last.word;
+    }
+  }
 
   history.push(picked);
   if (history.length > limit) {
@@ -38,16 +77,37 @@ function _selectNonRepeating(pool, history, limit) {
 // ==============================================================
 
 function _pickWord(difficulty, levelIndex) {
-  const cfg    = WORD_RUSH_CONFIG[difficulty];
-  const bank   = WORD_BANKS[cfg.wordBankKey] || WORD_BANKS.easy;
-  const subset = cfg.levels[levelIndex].wordSubset;
-  const split  = WORD_BANK_SPLIT[cfg.wordBankKey] || 10;
+  const cfg = WORD_RUSH_CONFIG[difficulty] || WORD_RUSH_CONFIG.easy;
+  let key = cfg.wordBankKey;
+  let bank = WORD_BANKS[key];
 
-  // subset < 1.0 → bias toward front of the bank
+  // Gracefully fall back to closest available difficulty if bank is empty
+  if (!bank || bank.length === 0) {
+    const fallbacks = {
+      hard: ["medium", "easy"],
+      medium: ["hard", "easy"],
+      easy: ["medium", "hard"]
+    };
+    for (const altKey of (fallbacks[difficulty] || ["easy"])) {
+      if (WORD_BANKS[altKey] && WORD_BANKS[altKey].length > 0) {
+        bank = WORD_BANKS[altKey];
+        key = altKey;
+        break;
+      }
+    }
+  }
+
+  if (!bank || bank.length === 0) return "type";
+
+  const levelCfg = cfg.levels[levelIndex] || cfg.levels[0];
+  const subset = levelCfg.wordSubset;
+  const split = WORD_BANK_SPLIT[key] || 10;
+
+  // Level progression subset sampling
   const cutoff = subset < 1.0 ? Math.min(Math.floor(bank.length * subset), split) : bank.length;
-  const pool   = bank.slice(0, Math.max(1, cutoff));
+  const pool = bank.slice(0, Math.max(1, cutoff));
 
-  return _selectNonRepeating(pool, _recentWords, RECENT_WORDS_LIMIT);
+  return _selectWeightedNonRepeating(pool, _recentWords, RECENT_WORDS_LIMIT);
 }
 
 /**
@@ -83,15 +143,35 @@ function trySpawnWord(state, now, canvasW, canvasH) {
 // ==============================================================
 
 function _pickSentence(difficulty, levelIndex) {
-  const cfg    = SENTENCE_RUSH_CONFIG[difficulty];
-  const bank   = SENTENCE_BANKS[cfg.sentenceBankKey] || SENTENCE_BANKS.easy;
-  const subset = cfg.levels[levelIndex].sentenceSubset;
-  const split  = SENTENCE_BANK_SPLIT[cfg.sentenceBankKey] || 5;
+  const cfg = SENTENCE_RUSH_CONFIG[difficulty] || SENTENCE_RUSH_CONFIG.easy;
+  let key = cfg.sentenceBankKey;
+  let bank = SENTENCE_BANKS[key];
+
+  if (!bank || bank.length === 0) {
+    const fallbacks = {
+      hard: ["medium", "easy"],
+      medium: ["hard", "easy"],
+      easy: ["medium", "hard"]
+    };
+    for (const altKey of (fallbacks[difficulty] || ["easy"])) {
+      if (SENTENCE_BANKS[altKey] && SENTENCE_BANKS[altKey].length > 0) {
+        bank = SENTENCE_BANKS[altKey];
+        key = altKey;
+        break;
+      }
+    }
+  }
+
+  if (!bank || bank.length === 0) return "practice typing every day";
+
+  const levelCfg = cfg.levels[levelIndex] || cfg.levels[0];
+  const subset = levelCfg.sentenceSubset;
+  const split = SENTENCE_BANK_SPLIT[key] || 5;
 
   const cutoff = subset < 1.0 ? Math.min(Math.floor(bank.length * subset), split) : bank.length;
-  const pool   = bank.slice(0, Math.max(1, cutoff));
+  const pool = bank.slice(0, Math.max(1, cutoff));
 
-  return _selectNonRepeating(pool, _recentSentences, RECENT_SENTENCES_LIMIT);
+  return _selectWeightedNonRepeating(pool, _recentSentences, RECENT_SENTENCES_LIMIT);
 }
 
 /**

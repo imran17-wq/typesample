@@ -1,5 +1,5 @@
 // ============================================================
-// WORD BANKS — Real-World English Words with Keyboard Reach Scoring
+// WORD BANKS — Real-World English Words with Keyboard Reach & Naturalness Scoring
 // Depends on: keyboard.js (KeyboardEngine)
 // ============================================================
 
@@ -52,55 +52,82 @@ const RAW_WORD_LIST = [
   { word: "virus", naturalness: 0.95 }, { word: "whole", naturalness: 0.95 },
 
   // Hard / Reach-Intensive Common Professional & System Words
-  { word: "quick", naturalness: 0.90 }, { word: "project", naturalness: 0.90 }, { word: "previous", naturalness: 0.90 },
-  { word: "review", naturalness: 0.90 }, { word: "requires", naturalness: 0.90 }, { word: "careful", naturalness: 0.90 },
-  { word: "verification", naturalness: 0.90 }, { word: "maximum", naturalness: 0.90 }, { word: "performance", naturalness: 0.90 },
-  { word: "workflow", naturalness: 0.90 }, { word: "environment", naturalness: 0.90 }, { word: "across", naturalness: 0.90 },
-  { word: "system", naturalness: 0.90 }, { word: "browser", naturalness: 0.90 }, { word: "software", naturalness: 0.90 },
-  { word: "function", naturalness: 0.90 }, { word: "execute", naturalness: 0.90 }, { word: "forward", naturalness: 0.90 },
-  { word: "different", naturalness: 0.90 }, { word: "movement", naturalness: 0.90 }, { word: "keyboard", naturalness: 0.90 },
-  { word: "building", naturalness: 0.90 }, { word: "development", naturalness: 0.90 }, { word: "quality", naturalness: 0.90 },
-  { word: "service", naturalness: 0.90 }, { word: "updates", naturalness: 0.90 }, { word: "security", naturalness: 0.90 },
+  { word: "quick", naturalness: 0.95 }, { word: "project", naturalness: 0.95 }, { word: "previous", naturalness: 0.95 },
+  { word: "review", naturalness: 0.95 }, { word: "requires", naturalness: 0.95 }, { word: "careful", naturalness: 0.95 },
+  { word: "verification", naturalness: 0.95 }, { word: "maximum", naturalness: 0.90 }, { word: "performance", naturalness: 0.90 },
+  { word: "workflow", naturalness: 0.95 }, { word: "environment", naturalness: 0.95 }, { word: "across", naturalness: 0.95 },
+  { word: "system", naturalness: 0.95 }, { word: "browser", naturalness: 0.95 }, { word: "software", naturalness: 0.95 },
+  { word: "function", naturalness: 0.95 }, { word: "execute", naturalness: 0.95 }, { word: "forward", naturalness: 0.95 },
+  { word: "different", naturalness: 0.95 }, { word: "movement", naturalness: 0.95 }, { word: "keyboard", naturalness: 0.95 },
+  { word: "building", naturalness: 0.95 }, { word: "development", naturalness: 0.95 }, { word: "quality", naturalness: 0.95 },
+  { word: "service", naturalness: 0.95 }, { word: "updates", naturalness: 0.95 }, { word: "security", naturalness: 0.95 },
   { word: "complex", naturalness: 0.90 }, { word: "qualify", naturalness: 0.85 }, { word: "quantity", naturalness: 0.85 },
-  { word: "quarterly", naturalness: 0.85 }, { word: "exposure", naturalness: 0.85 }, { word: "question", naturalness: 0.90 },
+  { word: "quarterly", naturalness: 0.85 }, { word: "exposure", naturalness: 0.85 }, { word: "question", naturalness: 0.95 },
   { word: "examine", naturalness: 0.85 }, { word: "extreme", naturalness: 0.85 }, { word: "exhaust", naturalness: 0.85 },
-  { word: "expected", naturalness: 0.90 }, { word: "practice", naturalness: 0.90 }, { word: "coordination", naturalness: 0.85 },
-  { word: "exactly", naturalness: 0.90 }, { word: "example", naturalness: 0.90 }, { word: "likewise", naturalness: 0.80 },
+  { word: "expected", naturalness: 0.90 }, { word: "practice", naturalness: 0.95 }, { word: "coordination", naturalness: 0.85 },
+  { word: "exactly", naturalness: 0.90 }, { word: "example", naturalness: 0.95 }, { word: "likewise", naturalness: 0.80 },
   { word: "amazing", naturalness: 0.85 }, { word: "explore", naturalness: 0.90 }, { word: "exercise", naturalness: 0.90 },
   { word: "minimize", naturalness: 0.85 }, { word: "explicit", naturalness: 0.85 }, { word: "external", naturalness: 0.85 },
-  { word: "exciting", naturalness: 0.85 }
+  { word: "exciting", naturalness: 0.85 },
+
+  // Rare Words (Allowed in pool with low selection weight, but won't dominate)
+  { word: "zephyr", naturalness: 0.20 },
+  { word: "quixotic", naturalness: 0.15 },
+  { word: "zoological", naturalness: 0.15 },
+  { word: "jukebox", naturalness: 0.25 },
+  { word: "quartz", naturalness: 0.30 },
+  { word: "paradox", naturalness: 0.40 }
 ];
 
-// Dynamically generate WORD_BANKS categorized by KeyboardEngine reach score
-const PROCESSED_WORD_DATA = RAW_WORD_LIST.map(item => {
+// Dynamically generate metadata for every word
+var WORD_METADATA = RAW_WORD_LIST.map(item => {
   const reachScore = typeof KeyboardEngine !== "undefined"
     ? KeyboardEngine.calculateReachScore(item.word)
     : 1.5;
   const bucket = typeof KeyboardEngine !== "undefined"
     ? KeyboardEngine.getDifficultyBucket(reachScore)
     : "easy";
+  const selectionWeight = typeof KeyboardEngine !== "undefined"
+    ? KeyboardEngine.getSelectionWeight(item.word, item.naturalness)
+    : item.naturalness;
   return {
     word: item.word,
     naturalness: item.naturalness,
     reachScore,
-    bucket
+    bucket,
+    selectionWeight
   };
 });
 
+var WORD_METADATA_MAP = {};
+WORD_METADATA.forEach(meta => {
+  WORD_METADATA_MAP[meta.word] = meta;
+});
+
+function getWordMetadata(word) {
+  return WORD_METADATA_MAP[word] || {
+    word,
+    naturalness: 0.9,
+    reachScore: typeof KeyboardEngine !== "undefined" ? KeyboardEngine.calculateReachScore(word) : 1.5,
+    bucket: typeof KeyboardEngine !== "undefined" ? KeyboardEngine.getDifficultyBucket(KeyboardEngine.calculateReachScore(word)) : "easy",
+    selectionWeight: 0.8
+  };
+}
+
 var WORD_BANKS = {
-  easy: PROCESSED_WORD_DATA
+  easy: WORD_METADATA
     .filter(w => w.bucket === "easy")
-    .sort((a, b) => b.naturalness - a.naturalness || a.reachScore - b.reachScore)
+    .sort((a, b) => b.selectionWeight - a.selectionWeight || a.reachScore - b.reachScore)
     .map(w => w.word),
 
-  medium: PROCESSED_WORD_DATA
+  medium: WORD_METADATA
     .filter(w => w.bucket === "medium")
-    .sort((a, b) => b.naturalness - a.naturalness || a.reachScore - b.reachScore)
+    .sort((a, b) => b.selectionWeight - a.selectionWeight || a.reachScore - b.reachScore)
     .map(w => w.word),
 
-  hard: PROCESSED_WORD_DATA
+  hard: WORD_METADATA
     .filter(w => w.bucket === "hard")
-    .sort((a, b) => b.naturalness - a.naturalness || b.reachScore - a.reachScore)
+    .sort((a, b) => b.selectionWeight - a.selectionWeight || b.reachScore - a.reachScore)
     .map(w => w.word)
 };
 
@@ -110,3 +137,19 @@ var WORD_BANK_SPLIT = {
   medium: Math.min(37, WORD_BANKS.medium.length),
   hard: Math.min(31, WORD_BANKS.hard.length),
 };
+
+if (typeof window !== "undefined") {
+  window.WORD_METADATA = WORD_METADATA;
+  window.WORD_METADATA_MAP = WORD_METADATA_MAP;
+  window.getWordMetadata = getWordMetadata;
+  window.WORD_BANKS = WORD_BANKS;
+  window.WORD_BANK_SPLIT = WORD_BANK_SPLIT;
+}
+
+if (typeof global !== "undefined") {
+  global.WORD_METADATA = WORD_METADATA;
+  global.WORD_METADATA_MAP = WORD_METADATA_MAP;
+  global.getWordMetadata = getWordMetadata;
+  global.WORD_BANKS = WORD_BANKS;
+  global.WORD_BANK_SPLIT = WORD_BANK_SPLIT;
+}

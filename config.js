@@ -3,7 +3,7 @@
 // ============================================================
 
 // ---- Word Rush ------------------------------------------------
-const WORD_RUSH_CONFIG = {
+var WORD_RUSH_CONFIG = {
   easy: {
     wordBankKey: "easy",
     levels: [
@@ -37,7 +37,7 @@ const WORD_RUSH_CONFIG = {
 };
 
 // ---- Sentence Rush --------------------------------------------
-const SENTENCE_RUSH_CONFIG = {
+var SENTENCE_RUSH_CONFIG = {
   easy: {
     sentenceBankKey: "easy",
     levels: [
@@ -74,7 +74,7 @@ const SENTENCE_RUSH_CONFIG = {
 const LEVEL_UP_SCORE_THRESHOLD = 500;
 
 // ---- localStorage  (6 keys: 2 modes × 3 difficulties) ---------
-const LS_KEYS = {
+var LS_KEYS = {
   wordRush:     { easy: "ts_wr_easy",   medium: "ts_wr_medium",   hard: "ts_wr_hard"   },
   sentenceRush: { easy: "ts_sr_easy",   medium: "ts_sr_medium",   hard: "ts_sr_hard"   },
 };
@@ -86,6 +86,7 @@ function getBest(mode, difficulty) {
   try {
     const key = LS_KEYS[mode]?.[difficulty];
     if (!key) return 0;
+    if (typeof localStorage === "undefined") return 0;
     const raw = localStorage.getItem(key);
     if (!raw) return 0;
     const val = parseInt(raw, 10);
@@ -108,10 +109,26 @@ function saveBest(mode, difficulty, score) {
       return;
     }
     const key = LS_KEYS[mode]?.[difficulty];
-    if (key) {
+    if (key && typeof localStorage !== "undefined") {
       localStorage.setItem(key, String(val));
     }
   } catch (e) {
     // Ignore restricted localStorage environments
   }
+}
+
+if (typeof window !== "undefined") {
+  window.WORD_RUSH_CONFIG = WORD_RUSH_CONFIG;
+  window.SENTENCE_RUSH_CONFIG = SENTENCE_RUSH_CONFIG;
+  window.LS_KEYS = LS_KEYS;
+  window.getBest = getBest;
+  window.saveBest = saveBest;
+}
+
+if (typeof global !== "undefined") {
+  global.WORD_RUSH_CONFIG = WORD_RUSH_CONFIG;
+  global.SENTENCE_RUSH_CONFIG = SENTENCE_RUSH_CONFIG;
+  global.LS_KEYS = LS_KEYS;
+  global.getBest = getBest;
+  global.saveBest = saveBest;
 }
