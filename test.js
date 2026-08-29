@@ -107,28 +107,51 @@ test("Weak-key analysis respects minimum attempt threshold", () => {
   assert.strictEqual(weakKeys[0].errorPercent, 33);
 });
 
-// 4. Adaptive Recommendation Thresholds
-test("Adaptive difficulty recommendation rules with 50-key minimum sample", () => {
-  // Keystroke sample < 50 keys -> fallback to medium
-  assert.strictEqual(
-    AnalyticsEngine.getRecommendedDifficulty({ totalKeys: 45, accuracy: 100, wpm: 90 }),
-    "medium",
-    "Should fallback to medium for sample < 50"
-  );
+// 4. Adaptive Recommendation Thresholds & Persistence Tests
+test("Adaptive difficulty persistence across consecutive runs and corruption recovery", () => {
+  // Mock localStorage
+  const store = {};
+  global.localStorage = {
+    getItem: key => store[key] || null,
+    setItem: (key, val) => { store[key] = String(val); },
+    removeItem: key => { delete store[key]; }
+  };
 
-  // Low accuracy < 88% -> easy (regardless of WPM)
-  assert.strictEqual(
-    AnalyticsEngine.getRecommendedDifficulty({ totalKeys: 50, accuracy: 80, wpm: 90 }),
-    "easy",
-    "Low accuracy should recommend easy"
-  );
+  localStorage.removeItem("ts_adaptive_recommendation");
 
-  // High accuracy >= 96% + high WPM >= 45 -> hard
-  assert.strictEqual(
-    AnalyticsEngine.getRecommendedDifficulty({ totalKeys: 55, accuracy: 98, wpm: 50 }),
-    "hard",
-    "High accuracy & WPM should recommend hard"
-  );
+  // Run 1: Starts at Medium baseline
+  const run1State = initGameState("wordRush", "adaptive");
+  assert.strictEqual(run1State.adaptiveEffectiveDiff, "medium", "Run 1 Adaptive should start at Medium baseline");
+
+  // Run 1 completes with high performance (55 keys, 98% acc, 50 WPM) -> Hard
+  const run1Rec = AnalyticsEngine.getRecommendedDifficulty({ totalKeys: 55, accuracy: 98, wpm: 50 });
+  assert.strictEqual(run1Rec, "hard");
+  AnalyticsEngine.saveAdaptiveRecommendation(run1Rec);
+  assert.strictEqual(localStorage.getItem("ts_adaptive_recommendation"), "hard", "Should save 'hard' to localStorage");
+
+  // Run 2: Starts and loads 'hard' from localStorage
+  const run2State = initGameState("wordRush", "adaptive");
+  assert.strictEqual(run2State.adaptiveEffectiveDiff, "hard", "Run 2 Adaptive should load 'hard' from localStorage");
+
+  // Run 2 completes with low performance (55 keys, 80% acc, 20 WPM) -> Easy
+  const run2Rec = AnalyticsEngine.getRecommendedDifficulty({ totalKeys: 55, accuracy: 80, wpm: 20 });
+  assert.strictEqual(run2Rec, "easy");
+  AnalyticsEngine.saveAdaptiveRecommendation(run2Rec);
+  assert.strictEqual(localStorage.getItem("ts_adaptive_recommendation"), "easy", "Should save 'easy' to localStorage");
+
+  // Run 3: Starts and loads 'easy' from localStorage
+  const run3State = initGameState("wordRush", "adaptive");
+  assert.strictEqual(run3State.adaptiveEffectiveDiff, "easy", "Run 3 Adaptive should load 'easy' from localStorage");
+
+  // Manual difficulty selection (e.g. Medium or Hard) does not corrupt adaptive recommendation
+  const manualState = initGameState("wordRush", "medium");
+  assert.strictEqual(manualState.difficulty, "medium");
+  assert.strictEqual(localStorage.getItem("ts_adaptive_recommendation"), "easy", "Manual run must NOT overwrite adaptive recommendation");
+
+  // Corrupted localStorage recovery test
+  localStorage.setItem("ts_adaptive_recommendation", "garbage_malformed_value");
+  const corruptState = initGameState("wordRush", "adaptive");
+  assert.strictEqual(corruptState.adaptiveEffectiveDiff, "medium", "Corrupted adaptive recommendation should fall back safely to 'medium'");
 });
 
 // 5. Input & Pause Behavior Tests

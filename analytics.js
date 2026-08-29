@@ -238,6 +238,39 @@
     };
   }
 
+  const LS_ADAPTIVE_KEY = "ts_adaptive_recommendation";
+  const VALID_ADAPTIVE_DIFFS = new Set(["easy", "medium", "hard"]);
+
+  /**
+   * Safely load and validate persistent adaptive recommendation.
+   */
+  function getAdaptiveRecommendation() {
+    try {
+      if (typeof localStorage === "undefined") return "medium";
+      const raw = localStorage.getItem(LS_ADAPTIVE_KEY);
+      if (raw && VALID_ADAPTIVE_DIFFS.has(raw)) {
+        return raw;
+      }
+      return "medium";
+    } catch (e) {
+      return "medium";
+    }
+  }
+
+  /**
+   * Safely save persistent adaptive recommendation.
+   */
+  function saveAdaptiveRecommendation(diff) {
+    try {
+      if (typeof localStorage === "undefined") return;
+      if (diff && VALID_ADAPTIVE_DIFFS.has(diff)) {
+        localStorage.setItem(LS_ADAPTIVE_KEY, diff);
+      }
+    } catch (e) {
+      // Ignore localStorage restrictions
+    }
+  }
+
   return {
     getActiveElapsedTime,
     computeWPM,
@@ -246,6 +279,8 @@
     getWeakKeys,
     getFingerAnalysis,
     getRecommendedDifficulty,
+    getAdaptiveRecommendation,
+    saveAdaptiveRecommendation,
     loadRunHistory,
     saveRunHistory,
     getAggregateStats

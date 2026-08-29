@@ -137,9 +137,10 @@ function endRun() {
       duration
     });
 
-    // If Adaptive mode, update recommended difficulty for future Adaptive runs
+    // If Adaptive mode, save and update recommended difficulty for future Adaptive runs
     const nextRec = AnalyticsEngine.getRecommendedDifficulty({ totalKeys: activeState.totalKeys, accuracy: acc, wpm });
     if (activeState.isAdaptive) {
+      AnalyticsEngine.saveAdaptiveRecommendation(nextRec);
       activeState.adaptiveEffectiveDiff = nextRec;
     }
   }

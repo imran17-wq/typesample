@@ -19,11 +19,15 @@ function initGameState(mode, difficulty) {
   }
 
   /** Shared fields for both modes */
+  const initialAdaptiveDiff = (difficulty === "adaptive" && typeof AnalyticsEngine !== "undefined")
+    ? AnalyticsEngine.getAdaptiveRecommendation()
+    : "medium";
+
   const base = {
     mode,                     // "wordRush" | "sentenceRush"
     difficulty,               // "easy" | "medium" | "hard" | "adaptive"
     isAdaptive:     difficulty === "adaptive",
-    adaptiveEffectiveDiff: "medium", // starting baseline for adaptive mode
+    adaptiveEffectiveDiff: initialAdaptiveDiff,
     level:          0,        // 0-indexed (display as 1-5)
     score:          0,
     bestScore:      getBest(mode, difficulty),
