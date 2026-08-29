@@ -79,10 +79,39 @@ const LS_KEYS = {
   sentenceRush: { easy: "ts_sr_easy",   medium: "ts_sr_medium",   hard: "ts_sr_hard"   },
 };
 
+/**
+ * Safely retrieve and validate stored best score.
+ */
 function getBest(mode, difficulty) {
-  return parseInt(localStorage.getItem(LS_KEYS[mode][difficulty]) || "0", 10);
+  try {
+    const key = LS_KEYS[mode]?.[difficulty];
+    if (!key) return 0;
+    const raw = localStorage.getItem(key);
+    if (!raw) return 0;
+    const val = parseInt(raw, 10);
+    if (isNaN(val) || !isFinite(val) || val < 0 || val > 10000000) {
+      return 0;
+    }
+    return val;
+  } catch (e) {
+    return 0;
+  }
 }
 
+/**
+ * Safely save best score if valid.
+ */
 function saveBest(mode, difficulty, score) {
-  localStorage.setItem(LS_KEYS[mode][difficulty], String(score));
+  try {
+    const val = parseInt(score, 10);
+    if (isNaN(val) || !isFinite(val) || val < 0 || val > 10000000) {
+      return;
+    }
+    const key = LS_KEYS[mode]?.[difficulty];
+    if (key) {
+      localStorage.setItem(key, String(val));
+    }
+  } catch (e) {
+    // Ignore restricted localStorage environments
+  }
 }

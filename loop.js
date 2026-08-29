@@ -1,5 +1,5 @@
 // ============================================================
-// GAME LOOP — requestAnimationFrame tick
+// GAME LOOP — requestAnimationFrame tick with frame-rate independence
 // Dispatches to mode-specific update, then calls render.
 // ============================================================
 
@@ -19,10 +19,28 @@ function startLoop(state, canvas, onRunEnd, getW, getH) {
   const detachInput = attachInputHandler(state, onRunEnd);
   _lastTime = performance.now();
 
-  function tick(now) {
-    if (state.ended) { detachInput(); return; }
+  function handleVisibilityChange() {
+    if (!document.hidden) {
+      _lastTime = performance.now(); // Reset timing baseline on tab return
+    }
+  }
+  document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    const dt = Math.min((now - _lastTime) / 1000, 0.1); // cap at 100 ms
+  function tick(now) {
+    if (state.ended) {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      detachInput();
+      return;
+    }
+
+    // Pause physics updates while tab is hidden
+    if (document.hidden) {
+      _lastTime = now;
+      _loopHandle = requestAnimationFrame(tick);
+      return;
+    }
+
+    const dt = Math.min((now - _lastTime) / 1000, 0.1); // cap at 100 ms max delta
     _lastTime = now;
 
     const W = getW(), H = getH();
@@ -35,6 +53,7 @@ function startLoop(state, canvas, onRunEnd, getW, getH) {
   _loopHandle = requestAnimationFrame(tick);
   return function stop() {
     if (_loopHandle) cancelAnimationFrame(_loopHandle);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
     detachInput();
   };
 }
@@ -68,9 +87,9 @@ function _updateWordRush(state, dt, now, W, H, floorY) {
     }
   }
 
-  // Fizzle animation for missed words
+  // Frame-rate independent fizzle animation for missed words
   for (const word of state.words) {
-    if (word.fizzle) word.fizzleAlpha -= 0.030;
+    if (word.fizzle) word.fizzleAlpha -= 1.8 * dt;
   }
 
   // Prune: keep alive words and still-fizzling words
@@ -94,40 +113,43 @@ function _updateSentenceRush(state, dt, now, W, H, floorY) {
       missLine(state, line);
     }
   } else if (line.fizzle) {
-    // Fizzle/pop exit animation — once fully transparent, clear the slot
-    line.fizzleAlpha -= 0.030;
+    // Frame-rate independent fizzle animation
+    line.fizzleAlpha -= 1.8 * dt;
     if (line.fizzleAlpha <= 0) {
       state.activeLine = null;
     }
   }
 }
 
-// ---- Shared effect animations --------------------------------
+// ---- Shared effect animations (frame-rate independent via dt) ---
 function _animateEffects(state, dt) {
   // Particles
   for (const p of state.particles) {
-    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
     p.vy += 120 * dt;  // mild gravity
-    p.alpha -= p.decay;
+    p.alpha -= (p.decay * 60) * dt;
   }
   state.particles = state.particles.filter(p => p.alpha > 0);
 
   // Lasers
-  for (const l of state.lasers) l.alpha -= l.decay;
+  for (const l of state.lasers) {
+    l.alpha -= (l.decay * 60) * dt;
+  }
   state.lasers = state.lasers.filter(l => l.alpha > 0);
 
-  // Miss flashes (drift upward)
+  // Miss flashes (drift upward and fade)
   for (const f of state.missFlashes) {
     f.y     -= 28 * dt;
-    f.alpha -= f.decay;
+    f.alpha -= (f.decay * 60) * dt;
   }
   state.missFlashes = state.missFlashes.filter(f => f.alpha > 0);
 
   // Level-up callout (float upward and fade)
   if (state.levelUpCallout) {
     const c = state.levelUpCallout;
-    c.y    -= 30 * dt;
-    c.alpha -= c.decay;
+    c.y     -= 30 * dt;
+    c.alpha -= (c.decay * 60) * dt;
     if (c.alpha <= 0) state.levelUpCallout = null;
   }
 }

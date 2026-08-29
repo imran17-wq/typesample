@@ -5,20 +5,49 @@
 //              words.js / sentences.js / config.js
 // ============================================================
 
+// Anti-repetition history queues
+const RECENT_WORDS_LIMIT = 12;
+const RECENT_SENTENCES_LIMIT = 5;
+
+const _recentWords = [];
+const _recentSentences = [];
+
+/**
+ * Select an item from candidate pool excluding recently spawned items.
+ */
+function _selectNonRepeating(pool, history, limit) {
+  if (!pool || pool.length === 0) return "";
+  if (pool.length === 1) return pool[0];
+
+  const available = pool.filter(item => !history.includes(item));
+  // If filtering leaves too few candidates, fall back to full pool
+  const candidatePool = available.length >= 2 ? available : pool;
+
+  const picked = candidatePool[Math.floor(Math.random() * candidatePool.length)];
+
+  history.push(picked);
+  if (history.length > limit) {
+    history.shift();
+  }
+
+  return picked;
+}
+
 // ==============================================================
 // WORD RUSH
 // ==============================================================
 
 function _pickWord(difficulty, levelIndex) {
   const cfg    = WORD_RUSH_CONFIG[difficulty];
-  const bank   = WORD_BANKS[cfg.wordBankKey];
+  const bank   = WORD_BANKS[cfg.wordBankKey] || WORD_BANKS.easy;
   const subset = cfg.levels[levelIndex].wordSubset;
-  const split  = WORD_BANK_SPLIT[cfg.wordBankKey];
+  const split  = WORD_BANK_SPLIT[cfg.wordBankKey] || 10;
 
-  // subset < 1.0 → bias toward the front (easier) portion of the bank
+  // subset < 1.0 → bias toward front of the bank
   const cutoff = subset < 1.0 ? Math.min(Math.floor(bank.length * subset), split) : bank.length;
-  const pool   = bank.slice(0, cutoff);
-  return pool[Math.floor(Math.random() * pool.length)];
+  const pool   = bank.slice(0, Math.max(1, cutoff));
+
+  return _selectNonRepeating(pool, _recentWords, RECENT_WORDS_LIMIT);
 }
 
 /**
@@ -26,7 +55,7 @@ function _pickWord(difficulty, levelIndex) {
  * @param {object} state
  * @param {number} now        performance.now()
  * @param {number} canvasW    logical width
- * @param {number} canvasH    logical height (unused but kept for symmetry)
+ * @param {number} canvasH    logical height
  */
 function trySpawnWord(state, now, canvasW, canvasH) {
   if (state.ended) return;
@@ -34,8 +63,8 @@ function trySpawnWord(state, now, canvasW, canvasH) {
   const levelCfg = cfg.levels[state.level];
 
   const aliveCount = state.words.filter(w => w.alive).length;
-  if (aliveCount >= levelCfg.maxWords)                        return;
-  if (now - state.lastSpawnTime < levelCfg.spawnInterval)     return;
+  if (aliveCount >= levelCfg.maxWords)                    return;
+  if (now - state.lastSpawnTime < levelCfg.spawnInterval) return;
 
   state.lastSpawnTime = now;
 
@@ -55,24 +84,24 @@ function trySpawnWord(state, now, canvasW, canvasH) {
 
 function _pickSentence(difficulty, levelIndex) {
   const cfg    = SENTENCE_RUSH_CONFIG[difficulty];
-  const bank   = SENTENCE_BANKS[cfg.sentenceBankKey];
+  const bank   = SENTENCE_BANKS[cfg.sentenceBankKey] || SENTENCE_BANKS.easy;
   const subset = cfg.levels[levelIndex].sentenceSubset;
-  const split  = SENTENCE_BANK_SPLIT[cfg.sentenceBankKey];
+  const split  = SENTENCE_BANK_SPLIT[cfg.sentenceBankKey] || 5;
 
   const cutoff = subset < 1.0 ? Math.min(Math.floor(bank.length * subset), split) : bank.length;
-  const pool   = bank.slice(0, cutoff);
-  return pool[Math.floor(Math.random() * pool.length)];
+  const pool   = bank.slice(0, Math.max(1, cutoff));
+
+  return _selectNonRepeating(pool, _recentSentences, RECENT_SENTENCES_LIMIT);
 }
 
 /**
  * Spawn the next sentence line if there is none currently active.
- * Called every update tick — immediately spawns when slot is free.
  * @param {object} state
  * @param {number} canvasW   logical width
- * @param {number} canvasH   (unused)
+ * @param {number} canvasH
  */
 function trySpawnLine(state, canvasW, canvasH) {
-  if (state.ended)             return;
+  if (state.ended)               return;
   if (state.activeLine !== null) return;
 
   const cfg      = SENTENCE_RUSH_CONFIG[state.difficulty];
