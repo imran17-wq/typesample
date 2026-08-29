@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Typing Shooter — Word Rush &amp; Sentence Rush</title>
+  <meta name="description" content="Typing Shooter: shoot falling word blocks and sentences by typing them. Two modes — Word Rush and Sentence Rush — with Easy, Medium, and Hard difficulty. Practice real typing speed and keyboard reach." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- =========================================================
+       START SCREEN
+       ========================================================= -->
+  <section class="screen" id="start-screen">
+
+    <h1 class="game-title">Typing <span>Shooter</span></h1>
+    <p class="game-subtitle">Destroy the falling content before it hits the ground</p>
+
+    <!-- Mode selection -->
+    <div class="section-label">Mode</div>
+    <div class="mode-row" role="radiogroup" aria-label="Game mode">
+
+      <div class="mode-card selected" data-mode="wordRush"
+           tabindex="0" role="radio" aria-checked="true" id="card-wordRush">
+        <div class="mode-name">Word Rush</div>
+        <div class="mode-desc">Individual falling word blocks — target the lowest match and type it to fire</div>
+      </div>
+
+      <div class="mode-card" data-mode="sentenceRush"
+           tabindex="0" role="radio" aria-checked="false" id="card-sentenceRush">
+        <div class="mode-name">Sentence Rush</div>
+        <div class="mode-desc">A full sentence falls as one strip — type it word by word, left to right</div>
+      </div>
+
+    </div>
+
+    <!-- Difficulty selection -->
+    <div class="section-label">Difficulty</div>
+    <div class="difficulty-row" role="radiogroup" aria-label="Difficulty">
+
+      <div class="diff-card easy selected" data-diff="easy"
+           tabindex="0" role="radio" aria-checked="true" id="card-easy">
+        <div class="diff-name">Easy</div>
+        <div class="diff-desc">Short common words · gentle speed</div>
+        <div class="diff-best">Best: <strong>0</strong></div>
+      </div>
+
+      <div class="diff-card medium" data-diff="medium"
+           tabindex="0" role="radio" aria-checked="false" id="card-medium">
+        <div class="diff-name">Medium</div>
+        <div class="diff-desc">Mixed words · moderate speed</div>
+        <div class="diff-best">Best: <strong>0</strong></div>
+      </div>
+
+      <div class="diff-card hard" data-diff="hard"
+           tabindex="0" role="radio" aria-checked="false" id="card-hard">
+        <div class="diff-name">Hard</div>
+        <div class="diff-desc">Corner-key words · fast speed</div>
+        <div class="diff-best">Best: <strong>0</strong></div>
+      </div>
+
+    </div>
+
+    <button class="btn-start" id="start-btn">Start Game</button>
+
+    <p class="control-hint" id="control-hint">
+      Start typing the falling words — no click needed.<br/>
+      Press <kbd>Esc</kbd> or <kbd>End Run</kbd> to finish a session.
+    </p>
+
+  </section>
+
+
+  <!-- =========================================================
+       PLAY SCREEN
+       ========================================================= -->
+  <section class="screen hidden" id="play-screen">
+    <canvas id="game-canvas"
+            aria-label="Typing Shooter game area"
+            tabindex="-1"></canvas>
+    <button id="end-run-btn" aria-label="End current run (Escape)">
+      End Run &nbsp;[Esc]
+    </button>
+  </section>
+
+
+  <!-- =========================================================
+       SUMMARY SCREEN
+       ========================================================= -->
+  <section class="screen hidden" id="summary-screen">
+
+    <h2 class="summary-title">Run Complete</h2>
+    <p class="summary-new-best" id="sum-new-best">New Best Score!</p>
+
+    <div class="summary-stats" role="list">
+
+      <div class="stat-row" role="listitem">
+        <div class="stat-label">Score</div>
+        <div class="stat-value accent" id="sum-score">0</div>
+      </div>
+
+      <div class="stat-row" role="listitem">
+        <div class="stat-label">Best</div>
+        <div class="stat-value" id="sum-best">0</div>
+      </div>
+
+      <div class="stat-row" role="listitem">
+        <div class="stat-label">WPM</div>
+        <div class="stat-value accent2" id="sum-wpm">0</div>
+      </div>
+
+      <div class="stat-row" role="listitem">
+        <div class="stat-label">Accuracy</div>
+        <div class="stat-value accent2" id="sum-acc">100%</div>
+      </div>
+
+      <div class="stat-row" role="listitem">
+        <div class="stat-label" id="sum-cleared-label">Words Cleared</div>
+        <div class="stat-value" id="sum-cleared">0</div>
+      </div>
+
+      <div class="stat-row" role="listitem">
+        <div class="stat-label">Longest Combo</div>
+        <div class="stat-value warn" id="sum-combo">0</div>
+      </div>
+
+      <div class="stat-row" role="listitem" style="grid-column: 1 / -1;">
+        <div class="stat-label">Level Reached</div>
+        <div class="stat-value" id="sum-level" style="font-size: 18px;">—</div>
+      </div>
+
+    </div>
+
+    <div class="summary-actions">
+      <button class="btn-action btn-play-again" id="btn-play-again">Play Again</button>
+      <button class="btn-action btn-change-mode" id="btn-change-mode">Change Mode / Difficulty</button>
+    </div>
+
+  </section>
+
+
+  <!-- =========================================================
+       Scripts — load order matters (dependencies first)
+       ========================================================= -->
+  <script src="words.js"></script>
+  <script src="sentences.js"></script>
+  <script src="config.js"></script>
+  <script src="state.js"></script>
+  <script src="renderer.js"></script>  <!-- defines measureWord, computeSentenceLayout -->
+  <script src="input.js"></script>     <!-- defines completeWord, missWord, completeLine, missLine -->
+  <script src="spawner.js"></script>   <!-- uses renderer measurement + input miss fns -->
+  <script src="loop.js"></script>
+  <script src="main.js"></script>
+
+</body>
+</html>

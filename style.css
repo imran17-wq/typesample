@@ -1,0 +1,240 @@
+/* ============================================================
+   TYPING SHOOTER — Global Styles
+   Dark arcade/terminal aesthetic, two-mode start screen
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ---- Reset -------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d1117;
+  --bg-card:   #111827;
+  --bg-card2:  #161f30;
+  --border:    #263348;
+  --border-hi: #3b5280;
+  --accent:    #5affb0;    /* green — Word Rush / Easy */
+  --accent2:   #5a9fff;    /* blue  — Sentence Rush */
+  --warn:      #ffe66d;    /* yellow — Medium */
+  --danger:    #ff5a5a;    /* red   — Hard */
+  --text:      #c8d8f8;
+  --text-dim:  #5a7aab;
+  --text-hi:   #f0f8ff;
+  --radius:    10px;
+  --radius-lg: 16px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ---- Screen manager ----------------------------------------- */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.screen.hidden {
+  opacity: 0; pointer-events: none; transform: scale(0.97);
+}
+
+/* ============================================================
+   START SCREEN
+   ============================================================ */
+#start-screen { gap: 20px; padding: 20px; }
+
+.game-title {
+  font-size: clamp(32px, 5.5vw, 56px);
+  font-weight: 700; letter-spacing: -1px;
+  color: var(--text-hi); text-align: center; line-height: 1;
+}
+.game-title span { color: var(--accent); }
+
+.game-subtitle {
+  font-size: 14px; color: var(--text-dim);
+  text-align: center; letter-spacing: 0.4px;
+}
+
+/* ---- Section label ---- */
+.section-label {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-dim); align-self: flex-start;
+  margin-left: 2px; margin-bottom: -10px;
+}
+
+/* ---- Mode row ---- */
+.mode-row {
+  display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+}
+
+.mode-card {
+  width: 220px; padding: 18px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.14s, transform 0.12s, background 0.14s;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.mode-card:hover { border-color: var(--border-hi); transform: translateY(-2px); }
+.mode-card.selected {
+  border-color: var(--accent2);
+  background: var(--bg-card2);
+}
+.mode-card[data-mode="wordRush"].selected  { border-color: var(--accent);  }
+.mode-card[data-mode="sentenceRush"].selected { border-color: var(--accent2); }
+
+.mode-name {
+  font-size: 16px; font-weight: 700; color: var(--text-hi);
+}
+.mode-card[data-mode="wordRush"].selected     .mode-name { color: var(--accent);  }
+.mode-card[data-mode="sentenceRush"].selected .mode-name { color: var(--accent2); }
+
+.mode-desc {
+  font-size: 12px; color: var(--text-dim); line-height: 1.5;
+}
+
+/* ---- Difficulty row ---- */
+.difficulty-row {
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+}
+
+.diff-card {
+  width: 180px; padding: 16px 14px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.14s, transform 0.12s, background 0.14s;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.diff-card:hover { border-color: var(--border-hi); transform: translateY(-2px); }
+.diff-card.selected { background: var(--bg-card2); }
+.diff-card.easy.selected   { border-color: var(--accent);  }
+.diff-card.medium.selected { border-color: var(--warn);    }
+.diff-card.hard.selected   { border-color: var(--danger);  }
+
+.diff-name {
+  font-size: 16px; font-weight: 700; color: var(--text-hi);
+}
+.diff-card.easy   .diff-name { color: var(--accent);  }
+.diff-card.medium .diff-name { color: var(--warn);    }
+.diff-card.hard   .diff-name { color: var(--danger);  }
+
+.diff-desc { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+.diff-best { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+.diff-best strong { color: var(--accent); }
+
+/* ---- Start button ---- */
+.btn-start {
+  padding: 13px 44px; font-size: 15px; font-weight: 700;
+  letter-spacing: 0.4px;
+  background: var(--accent); color: #0d1117;
+  border: none; border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.14s, transform 0.12s, box-shadow 0.14s;
+  box-shadow: 0 0 18px rgba(90,255,176,0.18);
+}
+.btn-start:hover {
+  background: #7affcc; transform: translateY(-2px);
+  box-shadow: 0 0 28px rgba(90,255,176,0.32);
+}
+.btn-start:active { transform: translateY(0); }
+
+/* ---- Control hint ---- */
+.control-hint {
+  font-size: 12px; color: var(--text-dim);
+  text-align: center; max-width: 460px; line-height: 1.7;
+}
+.control-hint kbd {
+  display: inline-block; padding: 1px 6px;
+  border: 1px solid var(--border-hi); border-radius: 4px;
+  font-size: 11px; color: var(--text);
+  font-family: 'Courier New', monospace;
+}
+
+/* ============================================================
+   PLAY SCREEN
+   ============================================================ */
+#play-screen { padding: 0; justify-content: flex-start; }
+
+#game-canvas { display: block; width: 100%; height: 100%; outline: none; }
+
+#end-run-btn {
+  position: fixed; bottom: 18px; right: 18px;
+  padding: 8px 18px; font-size: 12px; font-weight: 600;
+  color: var(--text-dim); background: rgba(13,17,23,0.82);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: color 0.14s, border-color 0.14s; z-index: 10;
+}
+#end-run-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ============================================================
+   SUMMARY SCREEN
+   ============================================================ */
+#summary-screen { gap: 24px; padding: 24px; }
+
+.summary-title {
+  font-size: clamp(24px, 3.5vw, 38px); font-weight: 700;
+  color: var(--text-hi); text-align: center;
+}
+
+.summary-new-best {
+  font-size: 13px; color: var(--accent); font-weight: 600;
+  text-align: center; letter-spacing: 0.4px; display: none;
+}
+.summary-new-best.visible { display: block; }
+
+.summary-stats {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px 20px; width: 100%; max-width: 430px;
+}
+
+.stat-row {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 12px 16px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; }
+.stat-value { font-size: 26px; font-weight: 700; color: var(--text-hi); line-height: 1; }
+.stat-value.accent  { color: var(--accent);  }
+.stat-value.accent2 { color: var(--accent2); }
+.stat-value.warn    { color: var(--warn);    }
+
+.summary-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+.btn-action {
+  padding: 11px 26px; font-size: 13px; font-weight: 600;
+  border-radius: var(--radius); cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.14s;
+}
+.btn-action:hover  { transform: translateY(-2px); }
+.btn-action:active { transform: translateY(0); }
+
+.btn-play-again {
+  background: var(--accent); color: #0d1117; border: none;
+  box-shadow: 0 0 14px rgba(90,255,176,0.18);
+}
+.btn-play-again:hover { box-shadow: 0 0 24px rgba(90,255,176,0.32); }
+
+.btn-change-mode {
+  background: transparent; color: var(--text);
+  border: 1px solid var(--border-hi);
+}
+.btn-change-mode:hover { border-color: var(--accent2); color: var(--accent2); }
+
+/* ---- Responsive ---- */
+@media (max-width: 560px) {
+  .mode-card, .diff-card { width: 100%; max-width: 300px; }
+  .mode-row, .difficulty-row { flex-direction: column; align-items: center; }
+  .summary-stats { grid-template-columns: 1fr; }
+}
