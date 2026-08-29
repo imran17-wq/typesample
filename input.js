@@ -28,16 +28,12 @@ function attachInputHandler(state, onRunEnd) {
     }
 
     // Keyboard Pause toggling:
-    // In Word Rush: P/p or Space may toggle pause via keyboard.
-    // In Sentence Rush: P/p and Space MUST remain normal typing characters (e.g. typing "project", "previous").
-    if (state.mode === "wordRush") {
-      const isP = e.key === "p" || e.key === "P";
-      const isSpace = e.key === " " || e.code === "Space";
-      if (isP || isSpace) {
-        e.preventDefault();
-        togglePauseState(state);
-        return;
-      }
+    // F2 toggles pause in all modes.
+    // P and Space are normal typing characters and MUST NOT trigger pause.
+    if (e.key === "F2") {
+      e.preventDefault();
+      togglePauseState(state);
+      return;
     }
 
     // When paused: ignore all typing input and do NOT count keys or mistakes

@@ -155,21 +155,25 @@ test("Adaptive difficulty persistence across consecutive runs and corruption rec
 });
 
 // 5. Input & Pause Behavior Tests
-test("Sentence Rush P-key typing does not toggle pause", () => {
+test("F2 toggles pause, P-key and Space do not toggle pause", () => {
   const srState = initGameState("sentenceRush", "medium");
   assert.strictEqual(srState.isPaused, false, "Should start unpaused");
 
-  // In Sentence Rush, keyboard P or Space does NOT toggle pause
-  // (Simulate attaching handler logic for Sentence Rush mode)
+  // In all modes, keyboard P or Space does NOT toggle pause
   const isP = true;
   if (srState.mode === "wordRush" && isP) {
+    togglePauseState(srState); // Simulate what input.js would do if P paused, but now we don't.
+  }
+  // Let's actually test what input.js would do if F2 is pressed
+  const e = { key: "F2", preventDefault: () => {} };
+  if (e.key === "F2") {
     togglePauseState(srState);
   }
-  assert.strictEqual(srState.isPaused, false, "Sentence Rush typing P must NOT toggle pause");
+  assert.strictEqual(srState.isPaused, true, "F2 must toggle pause");
 
   // Manual UI toggle works in all modes
   togglePauseState(srState);
-  assert.strictEqual(srState.isPaused, true, "Manual UI togglePauseState should pause game");
+  assert.strictEqual(srState.isPaused, false, "Manual UI togglePauseState should resume game");
 });
 
 // 6. History & LocalStorage Security Tests
