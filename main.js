@@ -102,7 +102,32 @@ function startRun() {
 function endRun() {
   if (!activeState) return;
   activeState.ended = true;
+  activeState.endTime = performance.now();
   if (stopLoop) { stopLoop(); stopLoop = null; }
+
+  // Calculate run analytics
+  if (typeof AnalyticsEngine !== "undefined") {
+    const wpm = AnalyticsEngine.computeWPM(activeState);
+    const rawWPM = AnalyticsEngine.computeRawWPM(activeState);
+    const acc = AnalyticsEngine.computeAccuracy(activeState);
+    const duration = Math.round(AnalyticsEngine.getActiveElapsedTime(activeState));
+
+    // Save run to local history
+    AnalyticsEngine.saveRunHistory({
+      timestamp: Date.now(),
+      mode: activeState.mode,
+      difficulty: activeState.difficulty,
+      wpm,
+      rawWPM,
+      accuracy: acc,
+      mistakes: activeState.mistakes,
+      score: activeState.score,
+      combo: activeState.longestCombo,
+      level: activeState.level + 1,
+      duration
+    });
+  }
+
   _populateSummary(activeState);
   showScreen("summary-screen");
 }
@@ -113,8 +138,12 @@ endRunBtn.addEventListener("click", endRun);
 // SUMMARY SCREEN
 // ==============================================================
 function _populateSummary(state) {
-  const wpm      = computeWPM(state);
-  const acc      = computeAccuracy(state);
+  const AE = typeof AnalyticsEngine !== "undefined" ? AnalyticsEngine : null;
+  const wpm      = AE ? AE.computeWPM(state) : 0;
+  const rawWPM   = AE ? AE.computeRawWPM(state) : 0;
+  const acc      = AE ? AE.computeAccuracy(state) : 100;
+  const duration = AE ? Math.round(AE.getActiveElapsedTime(state)) : 0;
+
   const mLabel   = state.mode === "wordRush" ? "Word Rush" : "Sentence Rush";
   const diff     = state.difficulty[0].toUpperCase() + state.difficulty.slice(1);
   const best     = getBest(state.mode, state.difficulty);
@@ -122,14 +151,60 @@ function _populateSummary(state) {
   const clrLabel = state.mode === "wordRush" ? "Words Cleared" : "Lines Cleared";
 
   document.getElementById("sum-score").textContent        = state.score.toLocaleString();
-  document.getElementById("sum-best").textContent         = best.toLocaleString();
-  document.getElementById("sum-wpm").textContent          = wpm;
+  document.getElementById("sum-wpm").textContent          = `${wpm} / ${rawWPM}`;
   document.getElementById("sum-acc").textContent          = acc + "%";
   document.getElementById("sum-cleared").textContent      = cleared;
   document.getElementById("sum-cleared-label").textContent = clrLabel;
   document.getElementById("sum-combo").textContent        = state.longestCombo;
   document.getElementById("sum-mistakes").textContent     = state.mistakes;
-  document.getElementById("sum-level").textContent        = `${mLabel} — ${diff} — Lv ${state.level + 1}`;
+  document.getElementById("sum-level").textContent        = `${mLabel} — ${diff} — Lv ${state.level + 1} (${duration}s)`;
+
+  // History aggregates
+  if (AE) {
+    const agg = AE.getAggregateStats();
+    if (agg.count > 0) {
+      document.getElementById("sum-hist-wpm").textContent = `${agg.bestWPM} / ${agg.avgWPM}`;
+      document.getElementById("sum-hist-acc").textContent = `${agg.bestAccuracy}% / ${agg.avgAccuracy}%`;
+    } else {
+      document.getElementById("sum-hist-wpm").textContent = "—";
+      document.getElementById("sum-hist-acc").textContent = "—";
+    }
+
+    // Weak Keys (minimum 5 attempts threshold)
+    const weakKeys = AE.getWeakKeys(state, 5);
+    const weakEl = document.getElementById("sum-weak-keys");
+    if (weakKeys.length > 0) {
+      weakEl.innerHTML = "";
+      weakKeys.forEach(item => {
+        const tag = document.createElement("span");
+        tag.className = "weak-key-tag";
+        tag.textContent = `${item.key.toUpperCase()} (${item.errorPercent}%)`;
+        weakEl.appendChild(tag);
+      });
+    } else {
+      weakEl.textContent = "Not enough data yet (min 5 attempts per key)";
+    }
+
+    // Finger Analysis (minimum 5 attempts threshold)
+    const fingerStats = AE.getFingerAnalysis(state, 5);
+    const fingerEl = document.getElementById("sum-finger-analysis");
+    if (fingerStats.length > 0) {
+      fingerEl.innerHTML = "";
+      fingerStats.forEach(f => {
+        const row = document.createElement("div");
+        row.className = "finger-item";
+        row.innerHTML = `<span>${f.name}</span><span class="err">${f.errorPercent}% error (${f.mistakes}/${f.attempts})</span>`;
+        fingerEl.appendChild(row);
+      });
+    } else {
+      fingerEl.textContent = "Not enough data yet (min 5 attempts per finger)";
+    }
+
+    // Recommended Difficulty
+    const recDiff = AE.getRecommendedDifficulty({ totalKeys: state.totalKeys, accuracy: acc, wpm });
+    const recEl = document.getElementById("sum-adaptive-rec");
+    recEl.innerHTML = `Next Recommended Difficulty: <strong>${recDiff.toUpperCase()}</strong>`;
+  }
 
   // "New best" callout when score matches the freshly saved best
   const isNewBest = state.score > 0 && state.score === best;

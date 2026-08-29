@@ -60,6 +60,13 @@
         <div class="diff-best">Best: <strong>0</strong></div>
       </div>
 
+      <div class="diff-card adaptive" data-diff="adaptive"
+           tabindex="0" role="radio" aria-checked="false" id="card-adaptive">
+        <div class="diff-name">Adaptive</div>
+        <div class="diff-desc">Dynamic reach difficulty based on performance</div>
+        <div class="diff-best">Best: <strong>0</strong></div>
+      </div>
+
     </div>
 
     <button class="btn-start" id="start-btn">Start Game</button>
@@ -86,53 +93,93 @@
 
 
   <!-- =========================================================
-       SUMMARY SCREEN
+       SUMMARY SCREEN (Structured Multi-Section Results)
        ========================================================= -->
   <section class="screen hidden" id="summary-screen">
 
     <h2 class="summary-title">Run Complete</h2>
     <p class="summary-new-best" id="sum-new-best">New Best Score!</p>
 
-    <div class="summary-stats" role="list">
+    <div class="summary-container">
 
-      <div class="stat-row" role="listitem">
-        <div class="stat-label">Score</div>
-        <div class="stat-value accent" id="sum-score">0</div>
+      <!-- Section 1: RUN SUMMARY -->
+      <div class="summary-section">
+        <h3 class="summary-sec-title">Run Summary</h3>
+        <div class="summary-stats" role="list">
+
+          <div class="stat-row" role="listitem">
+            <div class="stat-label">WPM (Net / Raw)</div>
+            <div class="stat-value accent2" id="sum-wpm">0 / 0</div>
+          </div>
+
+          <div class="stat-row" role="listitem">
+            <div class="stat-label">Accuracy</div>
+            <div class="stat-value accent2" id="sum-acc">100%</div>
+          </div>
+
+          <div class="stat-row" role="listitem">
+            <div class="stat-label">Score</div>
+            <div class="stat-value accent" id="sum-score">0</div>
+          </div>
+
+          <div class="stat-row" role="listitem">
+            <div class="stat-label">Mistakes</div>
+            <div class="stat-value" id="sum-mistakes" style="color: var(--danger);">0</div>
+          </div>
+
+          <div class="stat-row" role="listitem">
+            <div class="stat-label" id="sum-cleared-label">Words Cleared</div>
+            <div class="stat-value" id="sum-cleared">0</div>
+          </div>
+
+          <div class="stat-row" role="listitem">
+            <div class="stat-label">Longest Combo</div>
+            <div class="stat-value warn" id="sum-combo">0</div>
+          </div>
+
+          <div class="stat-row" role="listitem" style="grid-column: 1 / -1;">
+            <div class="stat-label">Duration &amp; Level</div>
+            <div class="stat-value" id="sum-level" style="font-size: 16px;">—</div>
+          </div>
+
+        </div>
       </div>
 
-      <div class="stat-row" role="listitem">
-        <div class="stat-label">Best</div>
-        <div class="stat-value" id="sum-best">0</div>
+      <!-- Section 2: PERFORMANCE HISTORY -->
+      <div class="summary-section">
+        <h3 class="summary-sec-title">Recent History</h3>
+        <div class="summary-stats" role="list">
+          <div class="stat-row" role="listitem">
+            <div class="stat-label">Best / Avg WPM</div>
+            <div class="stat-value" id="sum-hist-wpm" style="font-size: 20px;">—</div>
+          </div>
+          <div class="stat-row" role="listitem">
+            <div class="stat-label">Best / Avg Accuracy</div>
+            <div class="stat-value" id="sum-hist-acc" style="font-size: 20px;">—</div>
+          </div>
+        </div>
       </div>
 
-      <div class="stat-row" role="listitem">
-        <div class="stat-label">WPM</div>
-        <div class="stat-value accent2" id="sum-wpm">0</div>
+      <!-- Section 3: TYPING ANALYSIS -->
+      <div class="summary-section">
+        <h3 class="summary-sec-title">Typing Analysis</h3>
+        <div class="analysis-box">
+          <div class="analysis-sub">
+            <div class="stat-label">Most Difficult Keys</div>
+            <div class="weak-keys-list" id="sum-weak-keys">Not enough data yet</div>
+          </div>
+          <div class="analysis-sub" style="margin-top: 10px;">
+            <div class="stat-label">Finger Performance</div>
+            <div class="finger-list" id="sum-finger-analysis">Not enough data yet</div>
+          </div>
+        </div>
       </div>
 
-      <div class="stat-row" role="listitem">
-        <div class="stat-label">Accuracy</div>
-        <div class="stat-value accent2" id="sum-acc">100%</div>
-      </div>
-
-      <div class="stat-row" role="listitem">
-        <div class="stat-label" id="sum-cleared-label">Words Cleared</div>
-        <div class="stat-value" id="sum-cleared">0</div>
-      </div>
-
-      <div class="stat-row" role="listitem">
-        <div class="stat-label">Longest Combo</div>
-        <div class="stat-value warn" id="sum-combo">0</div>
-      </div>
-
-      <div class="stat-row" role="listitem">
-        <div class="stat-label">Mistakes</div>
-        <div class="stat-value" id="sum-mistakes" style="color: var(--danger);">0</div>
-      </div>
-
-      <div class="stat-row" role="listitem" style="grid-column: 1 / -1;">
-        <div class="stat-label">Level Reached</div>
-        <div class="stat-value" id="sum-level" style="font-size: 18px;">—</div>
+      <!-- Section 4: NEXT PRACTICE -->
+      <div class="summary-section" style="grid-column: 1 / -1;">
+        <div class="adaptive-rec-box" id="sum-adaptive-rec">
+          Next Recommended Difficulty: <strong>MEDIUM</strong>
+        </div>
       </div>
 
     </div>
@@ -149,6 +196,7 @@
        Scripts — load order matters (dependencies first)
        ========================================================= -->
   <script src="keyboard.js"></script>
+  <script src="analytics.js"></script>
   <script src="words.js"></script>
   <script src="sentences.js"></script>
   <script src="config.js"></script>

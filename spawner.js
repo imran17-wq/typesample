@@ -14,9 +14,9 @@ const _recentSentences = [];
 
 /**
  * Perform weighted random selection from candidate pool based on selectionWeight,
- * while respecting anti-repetition history.
+ * while respecting anti-repetition history and applying a modest weak-key bonus.
  */
-function _selectWeightedNonRepeating(pool, history, limit) {
+function _selectWeightedNonRepeating(pool, history, limit, weakKeys = []) {
   if (!pool || pool.length === 0) return "";
   if (pool.length === 1) return typeof pool[0] === "string" ? pool[0] : pool[0].word;
 
@@ -40,6 +40,22 @@ function _selectWeightedNonRepeating(pool, history, limit) {
         weight = meta.selectionWeight;
       }
     }
+
+    // Modest weak-key bonus (capped at 1.35x max) layered on top of naturalness & reach score
+    if (weakKeys && weakKeys.length > 0) {
+      const lowerWord = wStr.toLowerCase();
+      let hasWeakKey = false;
+      for (const k of weakKeys) {
+        if (lowerWord.includes(k)) {
+          hasWeakKey = true;
+          break;
+        }
+      }
+      if (hasWeakKey) {
+        weight *= 1.35;
+      }
+    }
+
     totalWeight += weight;
     return weight;
   });
@@ -76,8 +92,13 @@ function _selectWeightedNonRepeating(pool, history, limit) {
 // WORD RUSH
 // ==============================================================
 
-function _pickWord(difficulty, levelIndex) {
-  const cfg = WORD_RUSH_CONFIG[difficulty] || WORD_RUSH_CONFIG.easy;
+function _pickWord(difficulty, levelIndex, state) {
+  let activeDiff = difficulty;
+  if (difficulty === "adaptive" || (state && state.isAdaptive)) {
+    activeDiff = (state && state.adaptiveEffectiveDiff) ? state.adaptiveEffectiveDiff : "medium";
+  }
+
+  const cfg = WORD_RUSH_CONFIG[activeDiff] || WORD_RUSH_CONFIG.easy;
   let key = cfg.wordBankKey;
   let bank = WORD_BANKS[key];
 
@@ -88,7 +109,7 @@ function _pickWord(difficulty, levelIndex) {
       medium: ["hard", "easy"],
       easy: ["medium", "hard"]
     };
-    for (const altKey of (fallbacks[difficulty] || ["easy"])) {
+    for (const altKey of (fallbacks[activeDiff] || ["easy"])) {
       if (WORD_BANKS[altKey] && WORD_BANKS[altKey].length > 0) {
         bank = WORD_BANKS[altKey];
         key = altKey;
@@ -107,7 +128,14 @@ function _pickWord(difficulty, levelIndex) {
   const cutoff = subset < 1.0 ? Math.min(Math.floor(bank.length * subset), split) : bank.length;
   const pool = bank.slice(0, Math.max(1, cutoff));
 
-  return _selectWeightedNonRepeating(pool, _recentWords, RECENT_WORDS_LIMIT);
+  // Extract weak keys if present in state analytics
+  let weakKeys = [];
+  if (state && typeof AnalyticsEngine !== "undefined") {
+    const weakList = AnalyticsEngine.getWeakKeys(state, 4);
+    weakKeys = weakList.map(w => w.key);
+  }
+
+  return _selectWeightedNonRepeating(pool, _recentWords, RECENT_WORDS_LIMIT, weakKeys);
 }
 
 /**
@@ -119,8 +147,10 @@ function _pickWord(difficulty, levelIndex) {
  */
 function trySpawnWord(state, now, canvasW, canvasH) {
   if (state.ended) return;
-  const cfg      = WORD_RUSH_CONFIG[state.difficulty];
-  const levelCfg = cfg.levels[state.level];
+
+  const activeDiff = state.isAdaptive ? (state.adaptiveEffectiveDiff || "medium") : state.difficulty;
+  const cfg      = WORD_RUSH_CONFIG[activeDiff] || WORD_RUSH_CONFIG.easy;
+  const levelCfg = cfg.levels[state.level] || cfg.levels[0];
 
   const aliveCount = state.words.filter(w => w.alive).length;
   if (aliveCount >= levelCfg.maxWords)                    return;
@@ -128,7 +158,7 @@ function trySpawnWord(state, now, canvasW, canvasH) {
 
   state.lastSpawnTime = now;
 
-  const text = _pickWord(state.difficulty, state.level);
+  const text = _pickWord(state.difficulty, state.level, state);
   const dims = measureWord(text);
   const minX = 8, maxX = canvasW - dims.w - 8;
   const x    = minX + Math.random() * Math.max(0, maxX - minX);
@@ -142,8 +172,13 @@ function trySpawnWord(state, now, canvasW, canvasH) {
 // SENTENCE RUSH
 // ==============================================================
 
-function _pickSentence(difficulty, levelIndex) {
-  const cfg = SENTENCE_RUSH_CONFIG[difficulty] || SENTENCE_RUSH_CONFIG.easy;
+function _pickSentence(difficulty, levelIndex, state) {
+  let activeDiff = difficulty;
+  if (difficulty === "adaptive" || (state && state.isAdaptive)) {
+    activeDiff = (state && state.adaptiveEffectiveDiff) ? state.adaptiveEffectiveDiff : "medium";
+  }
+
+  const cfg = SENTENCE_RUSH_CONFIG[activeDiff] || SENTENCE_RUSH_CONFIG.easy;
   let key = cfg.sentenceBankKey;
   let bank = SENTENCE_BANKS[key];
 
@@ -153,7 +188,7 @@ function _pickSentence(difficulty, levelIndex) {
       medium: ["hard", "easy"],
       easy: ["medium", "hard"]
     };
-    for (const altKey of (fallbacks[difficulty] || ["easy"])) {
+    for (const altKey of (fallbacks[activeDiff] || ["easy"])) {
       if (SENTENCE_BANKS[altKey] && SENTENCE_BANKS[altKey].length > 0) {
         bank = SENTENCE_BANKS[altKey];
         key = altKey;
@@ -184,10 +219,11 @@ function trySpawnLine(state, canvasW, canvasH) {
   if (state.ended)               return;
   if (state.activeLine !== null) return;
 
-  const cfg      = SENTENCE_RUSH_CONFIG[state.difficulty];
-  const levelCfg = cfg.levels[state.level];
+  const activeDiff = state.isAdaptive ? (state.adaptiveEffectiveDiff || "medium") : state.difficulty;
+  const cfg      = SENTENCE_RUSH_CONFIG[activeDiff] || SENTENCE_RUSH_CONFIG.easy;
+  const levelCfg = cfg.levels[state.level] || cfg.levels[0];
 
-  const text   = _pickSentence(state.difficulty, state.level);
+  const text   = _pickSentence(state.difficulty, state.level, state);
   const words  = text.split(" ");
   const layout = computeSentenceLayout(words, canvasW);
 

@@ -113,7 +113,7 @@ function computeSentenceLayout(words, canvasW) {
 // ==============================================================
 // MAIN RENDER ENTRY
 // ==============================================================
-function render(ctx, state, W, H) {
+function render(ctx, state, W, H, fps = 60) {
   // 1. Background + grid
   ctx.fillStyle = C.bg;
   ctx.fillRect(0, 0, W, H);
@@ -177,6 +177,95 @@ function render(ctx, state, W, H) {
 
   // 12. Level-up callout
   if (state.levelUpCallout) _drawCallout(ctx, state.levelUpCallout, W, H);
+
+  // 13. Paused Overlay
+  if (state.isPaused) {
+    _drawPauseOverlay(ctx, state, W, H);
+  }
+
+  // 14. Dev Debug Overlay
+  if (state.isDebug) {
+    _drawDebugOverlay(ctx, state, W, H, fps);
+  }
+}
+
+function _drawPauseOverlay(ctx, state, W, H) {
+  ctx.save();
+  ctx.fillStyle = "rgba(13, 17, 23, 0.75)";
+  ctx.fillRect(0, 0, W, H);
+
+  const boxW = 320, boxH = 140;
+  const boxX = (W - boxW) / 2, boxY = (H - boxH) / 2;
+
+  ctx.fillStyle = "rgba(22, 31, 48, 0.95)";
+  _roundRect(ctx, boxX, boxY, boxW, boxH, 12);
+  ctx.fill();
+
+  ctx.strokeStyle = "#4a8eff";
+  ctx.lineWidth = 2;
+  _roundRect(ctx, boxX, boxY, boxW, boxH, 12);
+  ctx.stroke();
+
+  ctx.font = "bold 28px 'Inter', system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#f0f8ff";
+  ctx.fillText("PAUSED", W / 2, boxY + 45);
+
+  const resumeHint = state.mode === "wordRush"
+    ? "Press P or Space to resume"
+    : "Press P to resume";
+
+  ctx.font = "14px 'Inter', system-ui, sans-serif";
+  ctx.fillStyle = "#8daed4";
+  ctx.fillText(resumeHint, W / 2, boxY + 95);
+
+  ctx.restore();
+}
+
+function _drawDebugOverlay(ctx, state, W, H, fps) {
+  ctx.save();
+  ctx.font = "11px 'Courier New', monospace";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+
+  const activeWord = state.activeWordId !== null && state.words
+    ? state.words.find(w => w.id === state.activeWordId)
+    : null;
+  const targetText = activeWord ? activeWord.text : "none";
+  const activeCount = state.mode === "wordRush"
+    ? state.words.filter(w => w.alive).length
+    : (state.activeLine ? 1 : 0);
+
+  const effectiveDiff = state.isAdaptive ? (state.adaptiveEffectiveDiff || "medium") : state.difficulty;
+
+  const lines = [
+    `FPS: ${fps}`,
+    `Active Items: ${activeCount}`,
+    `Target: ${targetText}`,
+    `Mode: ${state.mode}`,
+    `Difficulty: ${state.difficulty}${state.isAdaptive ? ` (${effectiveDiff})` : ""}`,
+    `Level: ${state.level + 1}`
+  ];
+
+  const pad = 10, lineHeight = 16;
+  const boxW = 190, boxH = lines.length * lineHeight + 14;
+  const boxX = W - boxW - 14, boxY = H - boxH - 14;
+
+  ctx.fillStyle = "rgba(13, 17, 23, 0.88)";
+  _roundRect(ctx, boxX, boxY, boxW, boxH, 6);
+  ctx.fill();
+  ctx.strokeStyle = "#5affb0";
+  ctx.lineWidth = 1;
+  _roundRect(ctx, boxX, boxY, boxW, boxH, 6);
+  ctx.stroke();
+
+  ctx.fillStyle = "#5affb0";
+  lines.forEach((line, i) => {
+    ctx.fillText(line, boxX + pad, boxY + pad + i * lineHeight);
+  });
+
+  ctx.restore();
 }
 
 // ==============================================================

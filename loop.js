@@ -19,6 +19,20 @@ function startLoop(state, canvas, onRunEnd, getW, getH) {
   const detachInput = attachInputHandler(state, onRunEnd);
   _lastTime = performance.now();
 
+  // Check URL query parameter ?debug=1
+  if (typeof window !== "undefined" && window.location && window.location.search) {
+    if (window.location.search.includes("debug=1")) {
+      state.isDebug = true;
+    }
+  }
+
+  function handleDebugKey(e) {
+    if (e.key === "`" || e.key === "~") {
+      state.isDebug = !state.isDebug;
+    }
+  }
+  window.addEventListener("keydown", handleDebugKey);
+
   function handleVisibilityChange() {
     if (!document.hidden) {
       _lastTime = performance.now(); // Reset timing baseline on tab return
@@ -26,9 +40,12 @@ function startLoop(state, canvas, onRunEnd, getW, getH) {
   }
   document.addEventListener("visibilitychange", handleVisibilityChange);
 
+  let fps = 60;
+
   function tick(now) {
     if (state.ended) {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("keydown", handleDebugKey);
       detachInput();
       return;
     }
@@ -42,10 +59,16 @@ function startLoop(state, canvas, onRunEnd, getW, getH) {
 
     const dt = Math.min((now - _lastTime) / 1000, 0.1); // cap at 100 ms max delta
     _lastTime = now;
+    if (dt > 0) fps = Math.round(fps * 0.9 + (1 / dt) * 0.1);
 
     const W = getW(), H = getH();
-    _update(state, dt, now, W, H);
-    render(ctx, state, W, H);
+
+    // Freeze game physics and timers when paused
+    if (!state.isPaused) {
+      _update(state, dt, now, W, H);
+    }
+
+    render(ctx, state, W, H, fps);
 
     _loopHandle = requestAnimationFrame(tick);
   }
@@ -54,6 +77,7 @@ function startLoop(state, canvas, onRunEnd, getW, getH) {
   return function stop() {
     if (_loopHandle) cancelAnimationFrame(_loopHandle);
     document.removeEventListener("visibilitychange", handleVisibilityChange);
+    window.removeEventListener("keydown", handleDebugKey);
     detachInput();
   };
 }

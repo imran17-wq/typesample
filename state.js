@@ -5,10 +5,22 @@
 // ---- Top-level game state ------------------------------------
 
 function initGameState(mode, difficulty) {
+  // Initialize key and finger tracking stats
+  const keyStats = {};
+  for (let i = 97; i <= 122; i++) {
+    keyStats[String.fromCharCode(i)] = { attempts: 0, mistakes: 0 };
+  }
+  const fingerStats = {};
+  for (let f = 0; f <= 7; f++) {
+    fingerStats[f] = { attempts: 0, mistakes: 0 };
+  }
+
   /** Shared fields for both modes */
   const base = {
     mode,                     // "wordRush" | "sentenceRush"
-    difficulty,               // "easy" | "medium" | "hard"
+    difficulty,               // "easy" | "medium" | "hard" | "adaptive"
+    isAdaptive:     difficulty === "adaptive",
+    adaptiveEffectiveDiff: "medium", // starting baseline for adaptive mode
     level:          0,        // 0-indexed (display as 1-5)
     score:          0,
     bestScore:      getBest(mode, difficulty),
@@ -17,7 +29,13 @@ function initGameState(mode, difficulty) {
     totalKeys:      0,        // every keystroke (correct + wrong)
     correctKeys:    0,        // only correctly-matched characters
     mistakes:       0,        // explicit mistake counter
+    isPaused:       false,
+    pauseStartTime: 0,
+    totalPausedDuration: 0,   // accumulated milliseconds spent paused
+    keyStats,
+    fingerStats,
     startTime:      performance.now(),
+    endTime:        0,
     lastLevelUpScore: 0,
     particles:      [],
     lasers:         [],
