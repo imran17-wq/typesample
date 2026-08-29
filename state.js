@@ -5,10 +5,13 @@
 // ---- Top-level game state ------------------------------------
 
 function initGameState(mode, difficulty) {
-  // Initialize key and finger tracking stats
-  const keyStats = {};
+  // Initialize target-key, pressed-key, and finger tracking stats
+  const targetKeyStats = {};
+  const pressedKeyStats = {};
   for (let i = 97; i <= 122; i++) {
-    keyStats[String.fromCharCode(i)] = { attempts: 0, mistakes: 0 };
+    const ch = String.fromCharCode(i);
+    targetKeyStats[ch] = { attempts: 0, mistakes: 0 };
+    pressedKeyStats[ch] = { attempts: 0, mistakes: 0 };
   }
   const fingerStats = {};
   for (let f = 0; f <= 7; f++) {
@@ -32,7 +35,9 @@ function initGameState(mode, difficulty) {
     isPaused:       false,
     pauseStartTime: 0,
     totalPausedDuration: 0,   // accumulated milliseconds spent paused
-    keyStats,
+    keyStats:       targetKeyStats, // Alias for backward compatibility
+    targetKeyStats,
+    pressedKeyStats,
     fingerStats,
     startTime:      performance.now(),
     endTime:        0,

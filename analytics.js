@@ -66,13 +66,16 @@
 
   /**
    * Extract top 3 weak keys based on error rate (mistakes / attempts).
+   * Operates on targetKeyStats (or keyStats) to preserve weak-key practice.
    * Requires a minimum attempt count per key (default 5).
    */
   function getWeakKeys(state, minAttempts = 5) {
-    if (!state || !state.keyStats) return [];
+    if (!state) return [];
+    const statsSource = state.targetKeyStats || state.keyStats;
+    if (!statsSource) return [];
     const results = [];
-    for (const key in state.keyStats) {
-      const stats = state.keyStats[key];
+    for (const key in statsSource) {
+      const stats = statsSource[key];
       if (stats && stats.attempts >= minAttempts) {
         const errorRate = stats.mistakes / stats.attempts;
         if (errorRate > 0) {
@@ -116,14 +119,15 @@
 
   /**
    * Recommend next run difficulty based on conservative performance thresholds.
-   * Prioritizes accuracy over speed and requires a minimum sample of 20 total keystrokes.
+   * Prioritizes accuracy over speed and requires a minimum sample of 50 total keystrokes.
    */
   function getRecommendedDifficulty(stats) {
     const totalKeys = typeof stats.totalKeys === "number" ? stats.totalKeys : 0;
     const acc = typeof stats.accuracy === "number" ? stats.accuracy : 100;
     const wpm = typeof stats.wpm === "number" ? stats.wpm : 0;
 
-    if (totalKeys < 20) {
+    // Minimum sample requirement: 50 keystrokes
+    if (totalKeys < 50) {
       return "medium"; // baseline default for small sample
     }
 
@@ -135,6 +139,9 @@
       return wpm >= 60 ? "hard" : "medium";
     }
   }
+
+  const VALID_MODES = new Set(["wordRush", "sentenceRush"]);
+  const VALID_DIFFICULTIES = new Set(["easy", "medium", "hard", "adaptive"]);
 
   /**
    * Safely load and validate run history from localStorage.
@@ -151,8 +158,8 @@
         return (
           item &&
           typeof item === "object" &&
-          typeof item.mode === "string" &&
-          typeof item.difficulty === "string" &&
+          typeof item.mode === "string" && VALID_MODES.has(item.mode) &&
+          typeof item.difficulty === "string" && VALID_DIFFICULTIES.has(item.difficulty) &&
           typeof item.wpm === "number" && isFinite(item.wpm) && item.wpm >= 0 &&
           typeof item.accuracy === "number" && isFinite(item.accuracy) && item.accuracy >= 0 && item.accuracy <= 100 &&
           typeof item.score === "number" && isFinite(item.score) && item.score >= 0

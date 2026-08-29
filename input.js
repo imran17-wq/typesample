@@ -5,17 +5,18 @@
 // Sentence Rush: left-to-right word-by-word through a single line
 // ============================================================
 
-function attachInputHandler(state, onRunEnd) {
-  function togglePause() {
-    state.isPaused = !state.isPaused;
-    if (state.isPaused) {
-      state.pauseStartTime = performance.now();
-    } else {
-      state.totalPausedDuration += (performance.now() - state.pauseStartTime);
-      state.pauseStartTime = 0;
-    }
+function togglePauseState(state) {
+  if (!state || state.ended) return;
+  state.isPaused = !state.isPaused;
+  if (state.isPaused) {
+    state.pauseStartTime = performance.now();
+  } else {
+    state.totalPausedDuration += (performance.now() - state.pauseStartTime);
+    state.pauseStartTime = 0;
   }
+}
 
+function attachInputHandler(state, onRunEnd) {
   function handleKey(e) {
     if (state.ended) return;
 
@@ -26,15 +27,17 @@ function attachInputHandler(state, onRunEnd) {
       return;
     }
 
-    // Pause toggling
-    // P/p always toggles pause. Space toggles pause ONLY in Word Rush.
-    const isP = e.key === "p" || e.key === "P";
-    const isSpace = e.key === " " || e.code === "Space";
-
-    if (isP || (isSpace && state.mode === "wordRush")) {
-      e.preventDefault();
-      togglePause();
-      return;
+    // Keyboard Pause toggling:
+    // In Word Rush: P/p or Space may toggle pause via keyboard.
+    // In Sentence Rush: P/p and Space MUST remain normal typing characters (e.g. typing "project", "previous").
+    if (state.mode === "wordRush") {
+      const isP = e.key === "p" || e.key === "P";
+      const isSpace = e.key === " " || e.code === "Space";
+      if (isP || isSpace) {
+        e.preventDefault();
+        togglePauseState(state);
+        return;
+      }
     }
 
     // When paused: ignore all typing input and do NOT count keys or mistakes
@@ -58,24 +61,43 @@ function attachInputHandler(state, onRunEnd) {
 }
 
 /**
- * Track key and finger attempts/mistakes for detailed analytics
+ * Track target key, pressed key, and finger attempts/mistakes for detailed analytics
  */
-function _trackKeystroke(state, targetChar, isCorrect) {
-  if (!targetChar) return;
-  const lower = targetChar.toLowerCase();
-  if (state.keyStats && state.keyStats[lower]) {
-    state.keyStats[lower].attempts++;
-    if (!isCorrect) {
-      state.keyStats[lower].mistakes++;
+function _trackKeystroke(state, targetChar, pressedChar, isCorrect) {
+  // 1. Target Key statistics (required character for weak-key practice)
+  if (targetChar) {
+    const tLower = targetChar.toLowerCase();
+    if (state.targetKeyStats && state.targetKeyStats[tLower]) {
+      state.targetKeyStats[tLower].attempts++;
+      if (!isCorrect) {
+        state.targetKeyStats[tLower].mistakes++;
+      }
+    } else if (state.keyStats && state.keyStats[tLower]) {
+      state.keyStats[tLower].attempts++;
+      if (!isCorrect) {
+        state.keyStats[tLower].mistakes++;
+      }
+    }
+
+    // Finger mapping based on target key
+    if (typeof KeyboardEngine !== "undefined" && KeyboardEngine.FINGER_MAP) {
+      const fingerId = KeyboardEngine.FINGER_MAP[tLower];
+      if (fingerId !== undefined && state.fingerStats && state.fingerStats[fingerId]) {
+        state.fingerStats[fingerId].attempts++;
+        if (!isCorrect) {
+          state.fingerStats[fingerId].mistakes++;
+        }
+      }
     }
   }
 
-  if (typeof KeyboardEngine !== "undefined" && KeyboardEngine.FINGER_MAP) {
-    const fingerId = KeyboardEngine.FINGER_MAP[lower];
-    if (fingerId !== undefined && state.fingerStats && state.fingerStats[fingerId]) {
-      state.fingerStats[fingerId].attempts++;
+  // 2. Pressed Key statistics (actual key pressed on mistakes)
+  if (pressedChar) {
+    const pLower = pressedChar.toLowerCase();
+    if (state.pressedKeyStats && state.pressedKeyStats[pLower]) {
+      state.pressedKeyStats[pLower].attempts++;
       if (!isCorrect) {
-        state.fingerStats[fingerId].mistakes++;
+        state.pressedKeyStats[pLower].mistakes++;
       }
     }
   }
@@ -96,7 +118,7 @@ function _handleWordRushKey(state, ch) {
       const expected = word.text[word.typed];
       if (ch === expected) {
         // Correct keystroke
-        _trackKeystroke(state, expected, true);
+        _trackKeystroke(state, expected, ch, true);
         state.correctKeys++;
         word.typed++;
         if (word.typed === word.text.length) {
@@ -104,7 +126,7 @@ function _handleWordRushKey(state, ch) {
         }
       } else {
         // Wrong key while locked onto target
-        _trackKeystroke(state, expected, false);
+        _trackKeystroke(state, expected, ch, false);
         state.mistakes++;
         word.errorFlashTimer = 0.25;
         word.typed = 0;
@@ -123,7 +145,7 @@ function _handleWordRushKey(state, ch) {
   }
 
   if (best) {
-    _trackKeystroke(state, ch, true);
+    _trackKeystroke(state, ch, ch, true);
     state.correctKeys++;
     best.typed       = 1;
     state.activeWordId = best.id;
@@ -132,7 +154,7 @@ function _handleWordRushKey(state, ch) {
     }
   } else {
     // Pressed key did not match first char of any falling word
-    _trackKeystroke(state, ch, false);
+    _trackKeystroke(state, null, ch, false);
     state.mistakes++;
   }
 }

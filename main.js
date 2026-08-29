@@ -99,6 +99,16 @@ function startRun() {
   });
 }
 
+const pauseBtn = document.getElementById("pause-btn");
+if (pauseBtn) {
+  pauseBtn.addEventListener("click", () => {
+    if (activeState && typeof togglePauseState === "function") {
+      togglePauseState(activeState);
+      pauseBtn.blur(); // Blur to prevent spacebar triggering button click
+    }
+  });
+}
+
 function endRun() {
   if (!activeState) return;
   activeState.ended = true;
@@ -126,6 +136,12 @@ function endRun() {
       level: activeState.level + 1,
       duration
     });
+
+    // If Adaptive mode, update recommended difficulty for future Adaptive runs
+    const nextRec = AnalyticsEngine.getRecommendedDifficulty({ totalKeys: activeState.totalKeys, accuracy: acc, wpm });
+    if (activeState.isAdaptive) {
+      activeState.adaptiveEffectiveDiff = nextRec;
+    }
   }
 
   _populateSummary(activeState);

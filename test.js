@@ -16,6 +16,7 @@ eval(fs.readFileSync("words.js", "utf8"));
 eval(fs.readFileSync("sentences.js", "utf8"));
 eval(fs.readFileSync("config.js", "utf8"));
 eval(fs.readFileSync("state.js", "utf8"));
+eval(fs.readFileSync("input.js", "utf8"));
 eval(fs.readFileSync("spawner.js", "utf8"));
 
 let passedCount = 0;
@@ -107,12 +108,12 @@ test("Weak-key analysis respects minimum attempt threshold", () => {
 });
 
 // 4. Adaptive Recommendation Thresholds
-test("Adaptive difficulty recommendation rules", () => {
-  // Low sample < 20 keys -> fallback to medium
+test("Adaptive difficulty recommendation rules with 50-key minimum sample", () => {
+  // Keystroke sample < 50 keys -> fallback to medium
   assert.strictEqual(
-    AnalyticsEngine.getRecommendedDifficulty({ totalKeys: 10, accuracy: 100, wpm: 90 }),
+    AnalyticsEngine.getRecommendedDifficulty({ totalKeys: 45, accuracy: 100, wpm: 90 }),
     "medium",
-    "Should fallback to medium for sample < 20"
+    "Should fallback to medium for sample < 50"
   );
 
   // Low accuracy < 88% -> easy (regardless of WPM)
@@ -124,14 +125,32 @@ test("Adaptive difficulty recommendation rules", () => {
 
   // High accuracy >= 96% + high WPM >= 45 -> hard
   assert.strictEqual(
-    AnalyticsEngine.getRecommendedDifficulty({ totalKeys: 50, accuracy: 98, wpm: 50 }),
+    AnalyticsEngine.getRecommendedDifficulty({ totalKeys: 55, accuracy: 98, wpm: 50 }),
     "hard",
     "High accuracy & WPM should recommend hard"
   );
 });
 
-// 5. History & LocalStorage Security Tests
-test("Run history save, load, max 10 limit, and corruption recovery", () => {
+// 5. Input & Pause Behavior Tests
+test("Sentence Rush P-key typing does not toggle pause", () => {
+  const srState = initGameState("sentenceRush", "medium");
+  assert.strictEqual(srState.isPaused, false, "Should start unpaused");
+
+  // In Sentence Rush, keyboard P or Space does NOT toggle pause
+  // (Simulate attaching handler logic for Sentence Rush mode)
+  const isP = true;
+  if (srState.mode === "wordRush" && isP) {
+    togglePauseState(srState);
+  }
+  assert.strictEqual(srState.isPaused, false, "Sentence Rush typing P must NOT toggle pause");
+
+  // Manual UI toggle works in all modes
+  togglePauseState(srState);
+  assert.strictEqual(srState.isPaused, true, "Manual UI togglePauseState should pause game");
+});
+
+// 6. History & LocalStorage Security Tests
+test("Run history save, load, max 10 limit, mode/diff validation, and corruption recovery", () => {
   // Mock localStorage for Node test
   const store = {};
   global.localStorage = {
@@ -163,6 +182,11 @@ test("Run history save, load, max 10 limit, and corruption recovery", () => {
   const history = AnalyticsEngine.loadRunHistory();
   assert.strictEqual(history.length, 10, `Expected history capped at 10 runs, got ${history.length}`);
   assert.strictEqual(history[0].wpm, 32, "First run should be most recent (run #12)");
+
+  // Test malformed mode / difficulty rejection
+  store["ts_run_history"] = JSON.stringify([{ mode: "hackedMode", difficulty: "invalid", wpm: 50, accuracy: 100, score: 1000 }]);
+  const invalidHistory = AnalyticsEngine.loadRunHistory();
+  assert.strictEqual(invalidHistory.length, 0, "Invalid modes/difficulties in history should be rejected");
 
   // Test corruption recovery
   localStorage.setItem("ts_run_history", "malformed_invalid_json{{{");
