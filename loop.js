@@ -87,9 +87,12 @@ function _updateWordRush(state, dt, now, W, H, floorY) {
     }
   }
 
-  // Frame-rate independent fizzle animation for missed words
+  // Frame-rate independent animation updates for words (fizzle + error flash)
   for (const word of state.words) {
     if (word.fizzle) word.fizzleAlpha -= 1.8 * dt;
+    if (word.errorFlashTimer > 0) {
+      word.errorFlashTimer = Math.max(0, word.errorFlashTimer - dt);
+    }
   }
 
   // Prune: keep alive words and still-fizzling words
@@ -109,6 +112,9 @@ function _updateSentenceRush(state, dt, now, W, H, floorY) {
   if (line.alive) {
     // Falling
     line.y += line.fallSpeed * dt;
+    if (line.errorFlashTimer > 0) {
+      line.errorFlashTimer = Math.max(0, line.errorFlashTimer - dt);
+    }
     if (line.y + line.h >= floorY) {
       missLine(state, line);
     }

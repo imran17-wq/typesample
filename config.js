@@ -27,11 +27,11 @@ var WORD_RUSH_CONFIG = {
   hard: {
     wordBankKey: "hard",
     levels: [
-      { maxWords: 4, fallSpeed: 175, spawnInterval: 2200, wordSubset: 0.30 },
-      { maxWords: 4, fallSpeed: 200, spawnInterval: 1900, wordSubset: 0.45 },
-      { maxWords: 5, fallSpeed: 228, spawnInterval: 1650, wordSubset: 0.60 },
-      { maxWords: 5, fallSpeed: 258, spawnInterval: 1400, wordSubset: 0.78 },
-      { maxWords: 6, fallSpeed: 290, spawnInterval: 1200, wordSubset: 1.00 },
+      { maxWords: 3, fallSpeed: 165, spawnInterval: 2400, wordSubset: 0.35 },
+      { maxWords: 4, fallSpeed: 190, spawnInterval: 2000, wordSubset: 0.50 },
+      { maxWords: 4, fallSpeed: 215, spawnInterval: 1750, wordSubset: 0.65 },
+      { maxWords: 5, fallSpeed: 245, spawnInterval: 1500, wordSubset: 0.80 },
+      { maxWords: 5, fallSpeed: 275, spawnInterval: 1300, wordSubset: 1.00 },
     ],
   },
 };

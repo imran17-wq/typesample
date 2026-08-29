@@ -195,7 +195,7 @@ html, body {
 
 .summary-stats {
   display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px 20px; width: 100%; max-width: 430px;
+  gap: 10px 20px; width: 100%; max-width: 460px;
 }
 
 .stat-row {

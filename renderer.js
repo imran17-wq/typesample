@@ -190,17 +190,60 @@ function _drawWordRushContent(ctx, state) {
 }
 
 function _drawWordBlock(ctx, word, isActive) {
-  const { x, y, w, h, text, typed, fizzle, fizzleAlpha } = word;
+  let { x, y, w, h, text, typed, fizzle, fizzleAlpha, errorFlashTimer } = word;
   ctx.save();
   if (fizzle) ctx.globalAlpha = fizzleAlpha;
 
+  // Frame-rate independent horizontal shake on error
+  let shakeX = 0;
+  if (errorFlashTimer > 0) {
+    const intensity = Math.min(1, errorFlashTimer / 0.25);
+    shakeX = Math.sin(errorFlashTimer * 50) * 4 * intensity;
+  }
+  x += shakeX;
+
+  // Subtle glow on active target
+  if (isActive && !fizzle) {
+    ctx.shadowColor = "#5a9fff";
+    ctx.shadowBlur = 10;
+  }
+
   // Background
-  ctx.fillStyle = isActive ? C.wBlockBgA : C.wBlockBg;
+  if (errorFlashTimer > 0) {
+    ctx.fillStyle = "#3d1015"; // subtle red error tint
+  } else {
+    ctx.fillStyle = isActive ? C.wBlockBgA : C.wBlockBg;
+  }
   _roundRect(ctx, x, y, w, h, BLOCK_R); ctx.fill();
+
+  // Reset shadow for crisp border and text rendering
+  ctx.shadowBlur = 0;
+
   // Border
-  ctx.strokeStyle = isActive ? C.wBlockBdA : C.wBlockBd;
-  ctx.lineWidth   = isActive ? 1.5 : 1;
+  if (errorFlashTimer > 0) {
+    ctx.strokeStyle = "#ff4444";
+    ctx.lineWidth   = 2;
+  } else if (isActive) {
+    ctx.strokeStyle = C.wBlockBdA;
+    ctx.lineWidth   = 2;
+  } else {
+    ctx.strokeStyle = C.wBlockBd;
+    ctx.lineWidth   = 1;
+  }
   _roundRect(ctx, x, y, w, h, BLOCK_R); ctx.stroke();
+
+  // Progress Bar Accent Line on active target
+  if (isActive && !fizzle && text.length > 0) {
+    const progressRatio = Math.min(1, typed / text.length);
+    if (progressRatio > 0) {
+      ctx.fillStyle = C.tTyped;
+      const barH = 3;
+      const barY = y + h - barH - 2;
+      const barW = (w - 8) * progressRatio;
+      _roundRect(ctx, x + 4, barY, barW, barH, 1.5);
+      ctx.fill();
+    }
+  }
 
   // Text
   ctx.font = FONT_WORD; ctx.textBaseline = "middle";
@@ -229,16 +272,43 @@ function _drawSentenceRushContent(ctx, state) {
 }
 
 function _drawLineBlock(ctx, line) {
-  const { x, y, w, h, fizzle, fizzleAlpha } = line;
+  let { x, y, w, h, fizzle, fizzleAlpha, errorFlashTimer } = line;
   ctx.save();
   if (fizzle) ctx.globalAlpha = fizzleAlpha;
 
+  // Frame-rate independent horizontal shake on error
+  let shakeX = 0;
+  if (errorFlashTimer > 0) {
+    const intensity = Math.min(1, errorFlashTimer / 0.25);
+    shakeX = Math.sin(errorFlashTimer * 50) * 4 * intensity;
+  }
+  x += shakeX;
+
+  // Subtle glow on active sentence line
+  if (line.alive && !fizzle) {
+    ctx.shadowColor = "#4a8eff";
+    ctx.shadowBlur = 8;
+  }
+
   // Strip background
-  ctx.fillStyle   = C.sBg;
+  if (errorFlashTimer > 0) {
+    ctx.fillStyle = "#3d1015";
+  } else {
+    ctx.fillStyle = C.sBg;
+  }
   _roundRect(ctx, x, y, w, h, BLOCK_R); ctx.fill();
-  // Strip border  (active style whenever alive)
-  ctx.strokeStyle = line.alive ? C.sBdA : C.sBd;
-  ctx.lineWidth   = 1.5;
+
+  // Reset shadow for border & text rendering
+  ctx.shadowBlur = 0;
+
+  // Strip border
+  if (errorFlashTimer > 0) {
+    ctx.strokeStyle = "#ff4444";
+    ctx.lineWidth   = 2;
+  } else {
+    ctx.strokeStyle = line.alive ? C.sBdA : C.sBd;
+    ctx.lineWidth   = 1.5;
+  }
   _roundRect(ctx, x, y, w, h, BLOCK_R); ctx.stroke();
 
   // Per-word colouring
@@ -255,7 +325,14 @@ function _drawLineBlock(ctx, line) {
       ctx.fillText(word, wx, wy);
 
     } else if (i === line.wordIdx) {
-      // Currently active word
+      // Currently active word — add subtle highlight box behind current target word
+      if (line.alive && !fizzle) {
+        const wordW = ctx.measureText(word).width;
+        ctx.fillStyle = errorFlashTimer > 0 ? "rgba(255, 68, 68, 0.28)" : "rgba(74, 142, 255, 0.18)";
+        _roundRect(ctx, wx - 3, wy - SENT_LINE_H / 2 + 2, wordW + 6, SENT_LINE_H - 4, 4);
+        ctx.fill();
+      }
+
       const typed    = word.slice(0, line.charProgress);
       const untyped  = word.slice(line.charProgress);
       if (typed) {

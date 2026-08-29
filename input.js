@@ -53,7 +53,9 @@ function _handleWordRushKey(state, ch) {
           completeWord(state, word);
         }
       } else {
-        // Wrong — reset progress, stay locked on same word
+        // Wrong key while locked onto target
+        state.mistakes++;
+        word.errorFlashTimer = 0.25;
         word.typed = 0;
       }
       return;
@@ -76,8 +78,10 @@ function _handleWordRushKey(state, ch) {
     if (best.typed === best.text.length) {
       completeWord(state, best);
     }
+  } else {
+    // Pressed key did not match first char of any falling word
+    state.mistakes++;
   }
-  // else: no match — totalKeys was already incremented
 }
 
 // ---- Word Rush completion / miss ---------------------------
@@ -137,7 +141,9 @@ function _handleSentenceRushKey(state, ch) {
       }
     }
   } else {
-    // Wrong key — reset only the current word's progress
+    // Wrong key — count mistake, flash error feedback, reset only current word's progress
+    state.mistakes++;
+    line.errorFlashTimer = 0.25;
     line.charProgress = 0;
   }
 }

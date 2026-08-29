@@ -128,6 +128,7 @@ function _populateSummary(state) {
   document.getElementById("sum-cleared").textContent      = cleared;
   document.getElementById("sum-cleared-label").textContent = clrLabel;
   document.getElementById("sum-combo").textContent        = state.longestCombo;
+  document.getElementById("sum-mistakes").textContent     = state.mistakes;
   document.getElementById("sum-level").textContent        = `${mLabel} — ${diff} — Lv ${state.level + 1}`;
 
   // "New best" callout when score matches the freshly saved best

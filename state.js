@@ -16,6 +16,7 @@ function initGameState(mode, difficulty) {
     longestCombo:   0,
     totalKeys:      0,        // every keystroke (correct + wrong)
     correctKeys:    0,        // only correctly-matched characters
+    mistakes:       0,        // explicit mistake counter
     startTime:      performance.now(),
     lastLevelUpScore: 0,
     particles:      [],
@@ -58,9 +59,10 @@ function createWord(id, text, x, y, fallSpeed, w, h) {
     id, text,
     typed: 0,           // correctly typed chars so far
     x, y, fallSpeed, w, h,
-    alive:       true,
-    fizzle:      false, // true when missed (reached bottom)
-    fizzleAlpha: 1,
+    alive:           true,
+    fizzle:          false, // true when missed (reached bottom)
+    fizzleAlpha:     1,
+    errorFlashTimer: 0,     // wrong key visual feedback timer (seconds)
   };
 }
 
@@ -84,9 +86,10 @@ function createLine(id, words, wordLayouts, x, y, fallSpeed, w, h) {
     wordIdx:      0,      // index of word currently being typed
     charProgress: 0,      // chars correctly typed of current word
     x, y, fallSpeed, w, h,
-    alive:       true,
-    fizzle:      false,
-    fizzleAlpha: 1,
+    alive:           true,
+    fizzle:          false,
+    fizzleAlpha:     1,
+    errorFlashTimer: 0,   // wrong key visual feedback timer (seconds)
   };
 }
 
